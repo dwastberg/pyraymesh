@@ -24,6 +24,7 @@ class MeshRayResults:
     def __len__(self):
         return len(self.coords)
 
+    @property
     def hit_mask(self) -> np.ndarray:
         """
         Returns a boolean mask of hits

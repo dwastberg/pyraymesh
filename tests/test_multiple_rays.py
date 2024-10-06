@@ -55,7 +55,7 @@ def test_multiple_ray_intersect():
     assert len(result.distances) == 6
     assert result.distances[0] == 1
 
-    hit_mask = result.hit_mask()
+    hit_mask = result.hit_mask
     hit_coords = result.coords[hit_mask]
     assert len(hit_coords) == 3
     for h in hit_coords:
