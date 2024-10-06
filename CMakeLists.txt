@@ -24,7 +24,13 @@ include_directories(${CMAKE_SOURCE_DIR}/src/cpp/contrib)
 
 
 nanobind_add_module(${BINDINGS} ${CMAKE_SOURCE_DIR}/src/cpp/bvh_bind_ext.cpp)
-install(TARGETS ${BINDINGS} DESTINATION ${CMAKE_SOURCE_DIR}/src/pyraymesh)
+if(DEFINED ENV{GITHUB_ACTIONS})
+    install(TARGETS ${BINDINGS} LIBRARY DESTINATION pyraymesh)
+else()
+    install(TARGETS ${BINDINGS} DESTINATION ${CMAKE_SOURCE_DIR}/src/pyraymesh)
+endif()
+
+
 #install(TARGETS ${BINDINGS}
 #        LIBRARY DESTINATION pyraymesh)
 
