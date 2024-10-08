@@ -15,6 +15,10 @@ def test_import_Mesh():
     assert m is not None
     assert isinstance(m, Mesh)
 
+def test_empty_mesh():
+    m = Mesh([], [])
+    with pytest.raises(ValueError):
+        m.build("medium")
 
 def test_build_low_bvh():
     m = mesh_plane()
