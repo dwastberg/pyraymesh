@@ -29,7 +29,7 @@ def prep_rays(ray_origin, ray_direction, tmin=0, tfar=np.inf):
 
 class Mesh:
     def __init__(
-        self, vertices: Iterable[float], faces: Union[Iterable[int], None] = None
+        self, vertices: Iterable[float], faces: Union[Iterable[int], None] = None, robust: bool = False
     ):
         """
         Initializes the Mesh object with vertices and optional faces.
@@ -42,6 +42,7 @@ class Mesh:
         self.faces = faces
         self._normalize_mesh_data()
         self._bvh = None
+        self.robust = robust
 
     def _normalize_mesh_data(self):
         self.vertices = np.array(self.vertices, dtype=np.float32)
@@ -84,6 +85,7 @@ class Mesh:
         ray_direction: Iterable[float],
         tnear: float = 0,
         tfar: float = np.inf,
+        calculate_reflections: bool = False,
     ) -> IntersectionResult:
         """
         Intersects the rays with the BVH (Bounding Volume Hierarchy) of the mesh.
@@ -107,11 +109,17 @@ class Mesh:
                 raise ValueError("failed to build BVH")
         ray_origin, ray_direction = prep_rays(ray_origin, ray_direction, tnear, tfar)
 
-        coords, tri_ids, distances = _bvh_bind_ext.intersect_bvh(
-            self._bvh, ray_origin, ray_direction, tnear, tfar
-        )
+        if calculate_reflections:
+            coords, tri_ids, distances, reflections = _bvh_bind_ext.intersect_bvh(
+                self._bvh, ray_origin, ray_direction, tnear, tfar, self.robust, calculate_reflections
+            )
+        else:
+            coords, tri_ids, distances = _bvh_bind_ext.intersect_bvh(
+                self._bvh, ray_origin, ray_direction, tnear, tfar, self.robust, calculate_reflections
+            )
+            reflections = np.empty((0, 3))
 
-        return IntersectionResult(coords, tri_ids, distances)
+        return IntersectionResult(coords=coords, tri_ids=tri_ids, distances=distances, reflections=reflections)
 
     def occlusion(
         self,
