@@ -74,7 +74,8 @@ class Mesh:
         quality = quality.lower()
         if quality not in ["low", "medium", "high"]:
             raise ValueError("Quality must be one of 'low', 'medium' or 'high'")
-
+        if len(self.vertices) == 0 or len(self.faces) == 0:
+            raise ValueError("Mesh is empty")
         self._bvh = _bvh_bind_ext.build_bvh(self.vertices, self.faces, quality)
 
     def intersect(
@@ -102,6 +103,8 @@ class Mesh:
         if not self.is_built:
             print("BVH not built, building now with medium quality")
             self.build("medium")
+            if not self.is_built:
+                raise ValueError("failed to build BVH")
         ray_origin, ray_direction = prep_rays(ray_origin, ray_direction, tnear, tfar)
 
         coords, tri_ids, distances = _bvh_bind_ext.intersect_bvh(
