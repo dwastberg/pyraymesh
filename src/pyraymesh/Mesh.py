@@ -1,7 +1,7 @@
 import numpy as np
 
 from . import _bvh_bind_ext
-from .MeshRayResults import MeshRayResults
+from .IntersectionResult import IntersectionResult
 from typing import List, Iterable, Union
 
 
@@ -83,7 +83,7 @@ class Mesh:
         ray_direction: Iterable[float],
         tnear: float = 0,
         tfar: float = np.inf,
-    ) -> MeshRayResults:
+    ) -> IntersectionResult:
         """
         Intersects the rays with the BVH (Bounding Volume Hierarchy) of the mesh.
 
@@ -108,7 +108,7 @@ class Mesh:
             self._bvh, ray_origin, ray_direction, tnear, tfar
         )
 
-        return MeshRayResults(coords, tri_ids, distances)
+        return IntersectionResult(coords, tri_ids, distances)
 
     def occlusion(
         self,

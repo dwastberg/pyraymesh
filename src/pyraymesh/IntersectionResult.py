@@ -3,7 +3,7 @@ import numpy as np
 
 
 @dataclass
-class MeshRayResults:
+class IntersectionResult:
     """
     A class to store the intersection results of a ray with a mesh.
 
