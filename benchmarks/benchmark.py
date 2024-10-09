@@ -1,0 +1,79 @@
+from pyraymesh import Mesh as prmMesh
+
+try:
+    from embreex import rtcore_scene as rtcs
+    from embreex.mesh_construction import TriangleMesh
+
+    EMBREE = True
+except ImportError:
+    EMBREE = False
+
+import numpy as np
+from pathlib import Path
+import trimesh
+from time import time
+import timeit
+
+bunny = Path(__file__).parent / "bunny.obj"
+bunny = trimesh.load(bunny)
+bunny_vertices = bunny.vertices
+bunny_faces = bunny.faces
+
+
+def gen_rays(bounds, num_rays):
+    x_min, y_min, z_min = bounds[0]
+    x_max, y_max, z_max = bounds[1]
+    x = np.random.uniform(x_min, x_max, num_rays)
+    y = np.random.uniform(y_min, y_max, num_rays)
+    z = np.ones(num_rays) * (z_max + 1)
+    return np.stack([x, y, z], axis=1).astype(np.float32)
+
+
+rays = gen_rays(bunny.bounds, 10000)
+
+
+def embree_bunny():
+    scene = rtcs.EmbreeScene()
+    mesh = TriangleMesh(scene, bunny_vertices, bunny_faces)
+    return scene
+
+
+def pyraymesh_bunny():
+    mesh = prmMesh(bunny_vertices, bunny_faces)
+    mesh.build()
+    return mesh
+
+
+def embree_intersect(scene, rays):
+    res = scene.run(rays, np.array([[0, 0, -1]], dtype=np.float32))
+    return res
+
+
+def pyraymesh_intersect(mesh, rays):
+    res = mesh.intersect(rays, np.array([0, 0, -1], dtype=np.float32))
+    return res
+
+
+# embree_build_time = timeit.timeit(embree_bunny, number=10) / 10
+# pyraymesh_build_time = timeit.timeit(pyraymesh_bunny, number=10) / 10
+
+# print(f"Embree build time: {embree_build_time}")
+# print(f"PyRayMesh build time: {pyraymesh_build_time}")
+EMBREE = False
+if EMBREE:
+    embree_intersect_timer = timeit.Timer(
+        lambda: embree_intersect(embree_bunny(), rays)
+    )
+    embree_intersect_time = embree_intersect_timer.timeit(number=10) / 10
+    print(f"Embree intersect time: {embree_intersect_time}")
+    res = embree_intersect(embree_bunny(), rays)
+    print(f"embree len(res): {len(res)}")
+
+
+pyraymesh_intersect_timer = timeit.Timer(
+    lambda: pyraymesh_intersect(pyraymesh_bunny(), rays)
+)
+pyraymesh_intersect_time = pyraymesh_intersect_timer.timeit(number=1) / 1
+print(f"PyRayMesh intersect time: {pyraymesh_intersect_time}")
+res = pyraymesh_intersect(pyraymesh_bunny(), rays)
+print(f"len(res): {len(res)}")
