@@ -24,7 +24,7 @@
 namespace nb = nanobind;
 
 
-inline Vec3 triangle_normal(const Tri &tri, const Vec3 &hit_dir) {
+inline Vec3 triangle_normal(const Tri &tri) {
     Vec3 e1 = tri.p1 - tri.p0;
     Vec3 e2 = tri.p2 - tri.p0;
     Vec3 n = cross(e1, e2);
@@ -33,11 +33,12 @@ inline Vec3 triangle_normal(const Tri &tri, const Vec3 &hit_dir) {
 }
 
 inline Vec3 reflection_dir(const Vec3 &dir, const Vec3 &normal) {
-    return dir - 2 * dot(dir, normal) * normal;
+    auto ndir = normalize(dir);
+    return ndir - 2 * dot(ndir, normal) * normal;
 }
 
 inline Vec3 hit_reflection (const Tri &tri, const Vec3 &hit_dir) {
-    Vec3 normal = triangle_normal(tri, hit_dir);
+    Vec3 normal = triangle_normal(tri);
     Vec3 reflection = reflection_dir(hit_dir, normal);
     reflection = normalize(reflection);
     return reflection;
