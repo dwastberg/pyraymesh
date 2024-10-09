@@ -24,7 +24,7 @@ class IntersectionResult:
     distances: np.ndarray = field(default_factory=lambda: np.empty((0,)))
     reflections: np.ndarray = field(default_factory=lambda: np.empty((0, 3)))
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.coords)
 
     @property
