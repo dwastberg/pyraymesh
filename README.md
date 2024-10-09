@@ -59,12 +59,29 @@ ray_direction = [0, 0, -1]  # multiple rays with same direction
 ray_origin = [0.1, 0.2, 1]
 ray_direction = [[0, 0, -1], [0, 0, 1]]  # multiple rays with same origin
 
-result = mesh.intersect(ray_origin, ray_direction, tmin=0, tfar=1e3)
+result = mesh.intersect(ray_origin, ray_direction, tmin=0, tfar=1000)
 print(result.num_hits)
 print(result.coords)
 print(result.tri_ids)
 print(result.distances)
 ```
+
+### Reflections
+
+If you want to get the reflection of the rays, add the `calculate_reflections = True` 
+parameter to the `intersect` method:
+
+```python
+ray_origin = [[0.1, 0.2, 1], [0.2, 0.1, 1]]
+ray_direction = [[0, 0, -1], [0, 0, 1]]
+result = mesh.intersect(ray_origin, ray_direction, tmin=0, tfar=1000, calculate_reflections=True)
+print(result.reflections)
+```
+results.reflections is a list  of noramlized vectors representing the directions of the 
+reflection of the rays. Only do this if you need the reflections, as it will slow down the
+intersection tests.
+
+
 
 ### Occlusion Test
 
@@ -79,9 +96,18 @@ occluded = mesh.occlusion(ray_origin, ray_direction)
 print(occluded)
 ```
 
+### Numerical Robustness
+
+In some corner cases the intersection tests may fail due to numerical issues. To mitigate this, you can set 
+`mesh.robust = True` which will use a more numerically robust approach at the cost of speed.
+For details on what this does and when it might be needed, see [this](https://jcgt.org/published/0002/02/02/paper-original.pdf) paper.
+
+
+
+
 ## Testing
 
-To run the tests, use the following command:
+To run the tests:
 
 ```sh
 pytest
