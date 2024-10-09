@@ -76,4 +76,4 @@ pyraymesh_intersect_timer = timeit.Timer(
 pyraymesh_intersect_time = pyraymesh_intersect_timer.timeit(number=1) / 1
 print(f"PyRayMesh intersect time: {pyraymesh_intersect_time}")
 res = pyraymesh_intersect(pyraymesh_bunny(), rays)
-print(f"len(res): {len(res)}")
+print(f"num hits: {res.num_hits}")
