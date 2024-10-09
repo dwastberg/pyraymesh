@@ -29,7 +29,7 @@ def _prep_rays(ray_origin, ray_direction, tmin=0, tfar=np.inf):
 
 class Mesh:
     def __init__(
-        self, vertices: Iterable[float], faces: Union[Iterable[int], None] = None, robust: bool = False
+        self, vertices: Iterable[Iterable[float]], faces: Union[Iterable[Iterable[int]], None] = None, robust: bool = False
     ):
         """
         Initializes the Mesh object with vertices and optional faces.
@@ -81,8 +81,8 @@ class Mesh:
 
     def intersect(
         self,
-        ray_origin: Iterable[float],
-        ray_direction: Iterable[float],
+        ray_origin: Iterable[Iterable[float]],
+        ray_direction: Iterable[Iterable[float]],
         tnear: float = 0,
         tfar: float = np.inf,
         calculate_reflections: bool = False,
