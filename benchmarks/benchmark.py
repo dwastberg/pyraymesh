@@ -1,3 +1,13 @@
+import cProfile
+import pstats
+
+import sys
+from pathlib import Path
+
+src_root = Path(__file__).resolve().parents[1] / "src"
+print(f"src_root: {src_root}")
+sys.path.append(str(src_root))
+
 from pyraymesh import Mesh as prmMesh
 
 try:
@@ -23,13 +33,14 @@ bunny_faces = bunny.faces
 def gen_rays(bounds, num_rays):
     x_min, y_min, z_min = bounds[0]
     x_max, y_max, z_max = bounds[1]
+    np.random.seed(101)
     x = np.random.uniform(x_min, x_max, num_rays)
     y = np.random.uniform(y_min, y_max, num_rays)
     z = np.ones(num_rays) * (z_max + 1)
     return np.stack([x, y, z], axis=1).astype(np.float32)
 
 
-rays = gen_rays(bunny.bounds, 10000)
+rays = gen_rays(bunny.bounds, 100)
 
 
 def embree_bunny():
@@ -50,7 +61,9 @@ def embree_intersect(scene, rays):
 
 
 def pyraymesh_intersect(mesh, rays):
+    mesh.robust = True
     res = mesh.intersect(rays, np.array([0, 0, -1], dtype=np.float32))
+    # res = mesh.occlusion(rays, np.array([0, 0, -1], dtype=np.float32))
     return res
 
 
@@ -70,10 +83,20 @@ if EMBREE:
     print(f"embree len(res): {len(res)}")
 
 
-pyraymesh_intersect_timer = timeit.Timer(
-    lambda: pyraymesh_intersect(pyraymesh_bunny(), rays)
-)
-pyraymesh_intersect_time = pyraymesh_intersect_timer.timeit(number=1) / 1
-print(f"PyRayMesh intersect time: {pyraymesh_intersect_time}")
+# pyraymesh_intersect_timer = timeit.Timer(
+#     lambda: pyraymesh_intersect(pyraymesh_bunny(), rays)
+# )
+# pyraymesh_intersect_time = pyraymesh_intersect_timer.timeit(number=1) / 1
+# print(f"PyRayMesh intersect time: {pyraymesh_intersect_time}")
+profiler = cProfile.Profile()
+# profiler.enable()
+
+e_res = embree_intersect(embree_bunny(), rays)
+print(f"embree_hits {len([res for res in e_res if res >= 0])}")
+
 res = pyraymesh_intersect(pyraymesh_bunny(), rays)
+# profiler.disable()
+# print(f"pyraymesh len(res): {res.sum()}")
 print(f"num hits: {res.num_hits}")
+# stats = pstats.Stats(profiler).sort_stats("cumulative")
+# stats.print_stats()
