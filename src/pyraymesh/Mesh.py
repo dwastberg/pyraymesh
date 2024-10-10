@@ -119,7 +119,7 @@ class Mesh:
         ray_direction: Iterable[float],
         tmin=0,
         tfar=np.inf,
-    ) -> List[bool]:
+    ) -> np.ndarray:
         """
         Checks for occlusion along the rays with the BVH (Bounding Volume Hierarchy) of the mesh.
 
@@ -130,7 +130,7 @@ class Mesh:
         tfar (float, optional): The maximum distance along the ray to consider for occlusion. Defaults to np.inf.
 
         Returns:
-        bool: (list of bool) A list of boolean values indicating whether the ray is occluded.
+        hist: (list of bool) A list of boolean values indicating whether the ray is occluded.
 
         Raises:
         ValueError: If the BVH is not built and cannot be built with the specified quality.
@@ -140,6 +140,6 @@ class Mesh:
             self.build("medium")
         ray_origin, ray_direction = prep_rays(ray_origin, ray_direction, tmin, tfar)
 
-        return _bvh_bind_ext.occlude_bvh(
-            self._bvh, ray_origin, ray_direction, tmin, tfar
+        return np.array(
+            _bvh_bind_ext.occlude_bvh(self._bvh, ray_origin, ray_direction, tmin, tfar)
         )
