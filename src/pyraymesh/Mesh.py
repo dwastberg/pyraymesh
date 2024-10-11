@@ -3,6 +3,7 @@ import numpy as np
 from pyraymesh import _bvh_bind_ext
 from .IntersectionResult import IntersectionResult
 from typing import List, Iterable, Union
+from time import time
 
 
 def prep_rays(ray_origin, ray_direction, tmin=0, tfar=np.inf):
@@ -42,7 +43,7 @@ class Mesh:
         self.faces = faces
         self._normalize_mesh_data()
         self._bvh = None
-        self.robust = False
+        self.robust = True
 
     def _normalize_mesh_data(self):
         self.vertices = np.array(self.vertices, dtype=np.float32)
@@ -139,8 +140,12 @@ class Mesh:
         if not self.is_built:
             print("BVH not built, building now with medium quality")
             self.build("medium")
+        start_time = time()
         ray_origin, ray_direction = prep_rays(ray_origin, ray_direction, tmin, tfar)
-
-        return np.array(
-            _bvh_bind_ext.occlude_bvh(self._bvh, ray_origin, ray_direction, tmin, tfar)
+        print(f"    prep_rays time: {time() - start_time}")
+        start_time = time()
+        occlusion_result = _bvh_bind_ext.occlude_bvh(
+            self._bvh, ray_origin, ray_direction, tmin, tfar
         )
+        print(f"    occlude_bvh time: {time() - start_time}")
+        return np.array(occlusion_result)
