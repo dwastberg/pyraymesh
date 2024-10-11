@@ -1,3 +1,4 @@
+
 from pyraymesh import Mesh as prmMesh
 
 try:
@@ -25,11 +26,11 @@ def gen_rays(bounds, num_rays):
     x_max, y_max, z_max = bounds[1]
     x = np.random.uniform(x_min, x_max, num_rays)
     y = np.random.uniform(y_min, y_max, num_rays)
-    z = np.ones(num_rays) * (z_max + 1)
+    z = np.ones(num_rays) * (z_max + 10)
     return np.stack([x, y, z], axis=1).astype(np.float32)
 
 
-rays = gen_rays(bunny.bounds, 10000)
+rays = gen_rays(bunny.bounds, 1000)
 
 
 def embree_bunny():
@@ -41,6 +42,7 @@ def embree_bunny():
 def pyraymesh_bunny():
     mesh = prmMesh(bunny_vertices, bunny_faces)
     mesh.build()
+    mesh.robust = True
     return mesh
 
 
@@ -70,10 +72,20 @@ if EMBREE:
     print(f"embree len(res): {len(res)}")
 
 
-pyraymesh_intersect_timer = timeit.Timer(
-    lambda: pyraymesh_intersect(pyraymesh_bunny(), rays)
-)
-pyraymesh_intersect_time = pyraymesh_intersect_timer.timeit(number=1) / 1
-print(f"PyRayMesh intersect time: {pyraymesh_intersect_time}")
-res = pyraymesh_intersect(pyraymesh_bunny(), rays)
-print(f"num hits: {res.num_hits}")
+# pyraymesh_intersect_timer = timeit.Timer(
+#     lambda: pyraymesh_intersect(pyraymesh_bunny(), rays)
+# )
+# pyraymesh_intersect_time = pyraymesh_intersect_timer.timeit(number=1) / 1
+
+start = time()
+prm_mesh = prmMesh(bunny_vertices, bunny_faces)
+prm_mesh.build()
+
+# res = prm_mesh.intersect(rays, np.array([0, 0, -1], dtype=np.float32))
+# print(f"num hits: {res.num_hits}")
+
+res = prm_mesh.occlusion(np.array([[0,8,12]]), np.array([0, 0, -1], dtype=np.float32))
+print(f"num hits: {res.sum()}")
+
+print(f"PyRayMesh intersect time: {time() - start}")
+
