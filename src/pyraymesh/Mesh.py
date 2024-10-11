@@ -1,6 +1,6 @@
 import numpy as np
 
-from . import _bvh_bind_ext
+from pyraymesh import _bvh_bind_ext
 from .IntersectionResult import IntersectionResult
 from typing import List, Iterable, Union
 
@@ -42,6 +42,7 @@ class Mesh:
         self.faces = faces
         self._normalize_mesh_data()
         self._bvh = None
+        self.robust = False
 
     def _normalize_mesh_data(self):
         self.vertices = np.array(self.vertices, dtype=np.float32)
@@ -83,7 +84,7 @@ class Mesh:
         ray_origin: Iterable[float],
         ray_direction: Iterable[float],
         tnear: float = 0,
-        tfar: float = np.inf,
+        tfar: float = np.finfo(np.float32).max,
     ) -> IntersectionResult:
         """
         Intersects the rays with the BVH (Bounding Volume Hierarchy) of the mesh.
@@ -108,7 +109,7 @@ class Mesh:
         ray_origin, ray_direction = prep_rays(ray_origin, ray_direction, tnear, tfar)
 
         coords, tri_ids, distances = _bvh_bind_ext.intersect_bvh(
-            self._bvh, ray_origin, ray_direction, tnear, tfar
+            self._bvh, ray_origin, ray_direction, tnear, tfar, self.robust
         )
 
         return IntersectionResult(coords, tri_ids, distances)
@@ -119,6 +120,7 @@ class Mesh:
         ray_direction: Iterable[float],
         tmin=0,
         tfar=np.inf,
+    ) -> np.ndarray:
     ) -> np.ndarray:
         """
         Checks for occlusion along the rays with the BVH (Bounding Volume Hierarchy) of the mesh.

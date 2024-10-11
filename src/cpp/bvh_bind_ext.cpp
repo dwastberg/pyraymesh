@@ -32,7 +32,7 @@ constexpr Scalar ScalarNAN = std::numeric_limits<Scalar>::quiet_NaN();
 auto build_bvh(const nb::ndarray<Scalar, nb::shape<-1, 3>> &vertices, const nb::ndarray<int, nb::shape<-1, 3>> &indices,
                const std::string &quality = "medium") {
     std::vector<Tri> tris;
-    tris.reserve(indices.shape(0));
+    // tris.reserve(indices.shape(0));
     for (size_t i = 0; i < indices.shape(0); i++) {
         tris.emplace_back(
                 Vec3(vertices(indices(i, 0), 0), vertices(indices(i, 0), 1), vertices(indices(i, 0), 2)),
@@ -65,10 +65,13 @@ nb::tuple intersect_bvh(const Accel &bvh_accel, const nb::ndarray<Scalar, nb::sh
     std::vector<Scalar> t_values;
 
     auto intersect_fn = intersect_accel<false, false>;
-    if (robust)
+    if (robust) {
+        std::cout << "Using Robust mode" << std::endl;
         intersect_fn = intersect_accel<false, true>;
-
+    }
     for (auto ray: rays) {
+        std::cout << "Ray: "  << ray.org[0] << " " << ray.org[1] << " " << ray.org[2] << std::endl;
+        std::cout << "Ray: "  << ray.dir[0] << " " << ray.dir[1] << " " << ray.dir[2] << std::endl;
         auto prim_id = intersect_fn(ray, bvh_accel);
         if (prim_id != invalid_id) {
             auto hit = ray.org + ray.dir * ray.tmax;
