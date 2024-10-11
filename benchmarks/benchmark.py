@@ -40,7 +40,7 @@ def gen_rays(bounds, num_rays):
     return np.stack([x, y, z], axis=1).astype(np.float32)
 
 
-rays = gen_rays(bunny.bounds, 100)
+rays = gen_rays(bunny.bounds, 10000)
 
 
 def embree_bunny():
@@ -51,7 +51,7 @@ def embree_bunny():
 
 def pyraymesh_bunny():
     mesh = prmMesh(bunny_vertices, bunny_faces)
-    mesh.build()
+    mesh.build("high")
     return mesh
 
 
@@ -61,9 +61,9 @@ def embree_intersect(scene, rays):
 
 
 def pyraymesh_intersect(mesh, rays):
-    mesh.robust = True
-    res = mesh.intersect(rays, np.array([0, 0, -1], dtype=np.float32))
-    # res = mesh.occlusion(rays, np.array([0, 0, -1], dtype=np.float32))
+    # mesh.robust = True
+    # res = mesh.intersect(rays, np.array([0, 0, -1], dtype=np.float32))
+    res = mesh.occlusion(rays, np.array([0, 0, -1], dtype=np.float32))
     return res
 
 
@@ -91,12 +91,16 @@ if EMBREE:
 profiler = cProfile.Profile()
 # profiler.enable()
 
+start_time = time()
 e_res = embree_intersect(embree_bunny(), rays)
+print(f"embree time: {time() - start_time}")
 print(f"embree_hits {len([res for res in e_res if res >= 0])}")
 
+start_time = time()
 res = pyraymesh_intersect(pyraymesh_bunny(), rays)
+print(f"pyraymesh time: {time() - start_time}")
 # profiler.disable()
-# print(f"pyraymesh len(res): {res.sum()}")
-print(f"num hits: {res.num_hits}")
+print(f"pyraymesh hits: {res.sum()}")
+# print(f"num hits: {res.num_hits}")
 # stats = pstats.Stats(profiler).sort_stats("cumulative")
 # stats.print_stats()

@@ -36,14 +36,14 @@ static size_t intersect_accel(Ray &ray, const Accel &accel)
                                                       {
                                                           for (size_t i = begin; i < end; ++i)
                                                           {
-                                                              num_tests++;
+                                                              //   num_tests++;
                                                               // std::cout << "i: " << i << std::endl;
                                                               if (accel.precomputed_tris[i].intersect(ray))
                                                                   prim_id = i;
                                                           }
                                                           return prim_id != invalid_id;
                                                       });
-    std::cout << "num_tests: " << num_tests << std::endl;
+    // std::cout << "num_tests: " << num_tests << std::endl;
     return prim_id;
 }
 
