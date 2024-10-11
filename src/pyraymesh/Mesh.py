@@ -121,7 +121,6 @@ class Mesh:
         tmin=0,
         tfar=np.inf,
     ) -> np.ndarray:
-    ) -> np.ndarray:
         """
         Checks for occlusion along the rays with the BVH (Bounding Volume Hierarchy) of the mesh.
 
