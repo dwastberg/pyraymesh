@@ -111,11 +111,11 @@ class Mesh:
 
         if calculate_reflections:
             coords, tri_ids, distances, reflections = _bvh_bind_ext.intersect_bvh(
-                self._bvh, ray_origin, ray_direction, tnear, tfar, self.robust, calculate_reflections
+                self._bvh, ray_origin, ray_direction, tnear, tfar, calculate_reflections, self.robust
             )
         else:
             coords, tri_ids, distances = _bvh_bind_ext.intersect_bvh(
-                self._bvh, ray_origin, ray_direction, tnear, tfar, self.robust, calculate_reflections
+                self._bvh, ray_origin, ray_direction, tnear, tfar, calculate_reflections, self.robust
             )
             reflections = np.empty((0, 3))
 
