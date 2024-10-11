@@ -29,7 +29,7 @@ def _prep_rays(ray_origin, ray_direction, tmin=0, tfar=np.inf):
 
 class Mesh:
     def __init__(
-        self, vertices: Iterable[Iterable[float]], faces: Union[Iterable[Iterable[int]], None] = None, robust: bool = False
+        self, vertices: Iterable[float], faces: Union[Iterable[int], None] = None
     ):
         """
         Initializes the Mesh object with vertices and optional faces.
@@ -42,7 +42,7 @@ class Mesh:
         self.faces = faces
         self._normalize_mesh_data()
         self._bvh = None
-        self.robust = robust
+        self.robust = True
 
     def _normalize_mesh_data(self):
         self.vertices = np.array(self.vertices, dtype=np.float32)
@@ -127,7 +127,7 @@ class Mesh:
         ray_direction: Iterable[float],
         tmin=0,
         tfar=np.inf,
-    ) -> List[bool]:
+    ) -> np.ndarray:
         """
         Checks for occlusion along the rays with the BVH (Bounding Volume Hierarchy) of the mesh.
 
@@ -148,6 +148,8 @@ class Mesh:
             self.build("medium")
         ray_origin, ray_direction = _prep_rays(ray_origin, ray_direction, tmin, tfar)
 
-        return _bvh_bind_ext.occlude_bvh(
-            self._bvh, ray_origin, ray_direction, tmin, tfar
+        return np.array(
+            _bvh_bind_ext.occlude_bvh(
+                self._bvh, ray_origin, ray_direction, tmin, tfar, self.robust
+            )
         )

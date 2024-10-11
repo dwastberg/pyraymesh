@@ -40,4 +40,4 @@ class IntersectionResult:
         Returns the number of intersection points.
         :return: int
         """
-        return np.isnan(self.coords[:, 0]).sum()
+        return (~np.isnan(self.coords[:, 0])).sum()
