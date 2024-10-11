@@ -6,7 +6,7 @@
 tests on 3D meshes using a Bounding Volume Hierarchy (BVH). The library uses
 the C++ library [bvh](https://github.com/madmann91/bvh) for building the BVH and performing the intersection tests.
 
-While this library is reasonably fast (benchmarks coming soon), it is not as fast as Embree. However, it does not
+While this library is reasonably fast for simpler meshes(benchmarks coming soon), it is not as fast as Embree, especially for large and complex meshes. However, it does not
 have any dependencies on external libraries, and is thus easier to install and use.
 
 ## Installation
