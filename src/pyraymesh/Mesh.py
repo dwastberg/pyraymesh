@@ -5,7 +5,7 @@ from .IntersectionResult import IntersectionResult
 from typing import List, Iterable, Union
 
 
-def _prep_rays(ray_origin, ray_direction, tmin=0, tfar=np.inf):
+def _prep_rays(ray_origin, ray_direction):
     ray_origin = np.array(ray_origin, dtype=np.float32)
     ray_direction = np.array(ray_direction, dtype=np.float32)
     if len(ray_origin.shape) == 1:
@@ -84,7 +84,7 @@ class Mesh:
         ray_origin: Iterable[Iterable[float]],
         ray_direction: Iterable[Iterable[float]],
         tnear: float = 0,
-        tfar: float = np.inf,
+        tfar: float = np.finfo(np.float32).max,
         calculate_reflections: bool = False,
     ) -> IntersectionResult:
         """
@@ -107,7 +107,7 @@ class Mesh:
             self.build("medium")
             if not self.is_built:
                 raise ValueError("failed to build BVH")
-        ray_origin, ray_direction = _prep_rays(ray_origin, ray_direction, tnear, tfar)
+        ray_origin, ray_direction = _prep_rays(ray_origin, ray_direction)
 
         if calculate_reflections:
             coords, tri_ids, distances, reflections = _bvh_bind_ext.intersect_bvh(
@@ -126,7 +126,7 @@ class Mesh:
         ray_origin: Iterable[float],
         ray_direction: Iterable[float],
         tnear=0,
-        tfar=np.inf,
+        tfar=np.finfo(np.float32).max,
     ) -> np.ndarray:
         """
         Checks for occlusion along the rays with the BVH (Bounding Volume Hierarchy) of the mesh.
@@ -146,7 +146,7 @@ class Mesh:
         if not self.is_built:
             print("BVH not built, building now with medium quality")
             self.build("medium")
-        ray_origin, ray_direction = _prep_rays(ray_origin, ray_direction, tnear, tfar)
+        ray_origin, ray_direction = _prep_rays(ray_origin, ray_direction)
 
         return np.array(
             _bvh_bind_ext.occlude_bvh(
