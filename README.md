@@ -66,6 +66,23 @@ print(result.tri_ids)
 print(result.distances)
 ```
 
+### Reflections
+
+If you want to get the reflection of the rays, add the `calculate_reflections = True` 
+parameter to the `intersect` method:
+
+```python
+ray_origin = [[0.1, 0.2, 1], [0.2, 0.1, 1]]
+ray_direction = [[0, 0, -1], [0, 0, 1]]
+result = mesh.intersect(ray_origin, ray_direction, tmin=0, tfar=1000, calculate_reflections=True)
+print(result.reflections)
+```
+results.reflections is a list  of noramlized vectors representing the directions of the 
+reflection of the rays. Only do this if you need the reflections, as it will slow down the
+intersection tests.
+
+
+
 ### Occlusion Test
 
 If you just care about whether a ray is occluded or not (i.e., you don't care about
@@ -81,7 +98,7 @@ print(occluded)
 
 ## Testing
 
-To run the tests, use the following command:
+To run the tests:
 
 ```sh
 pytest

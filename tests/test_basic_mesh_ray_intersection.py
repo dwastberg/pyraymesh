@@ -62,6 +62,22 @@ def test_single_ray_intersection():
     assert len(result.distances) == 1
     assert result.distances[0] == 1
 
+def test_origin_on_plane():
+    m = mesh_plane()
+    m.build("medium")
+    ray_origin = [0.5, 0.5, 0]
+    ray_direction = [0, 0, -1]
+    result = m.intersect(ray_origin, ray_direction)
+    assert len(result.coords) == 1
+    assert result.coords[0][0] == 0.5
+    assert result.coords[0][1] == 0.5
+    assert result.coords[0][2] == 0
+
+    result = m.intersect(ray_origin, ray_direction, tnear=0.01)
+    assert len(result) == 1
+    assert np.isnan(result.coords[0][0])
+
+
 
 def test_tfar_intersection_miss():
     m = mesh_plane()
@@ -82,6 +98,16 @@ def test_tnear_intersection_miss():
     assert len(result) == 1
     assert np.isnan(result.coords[0][0])
 
+def test_angle_intersection():
+    m = mesh_plane()
+    m.build("medium")
+    ray_origin = [0.5, 0.5, 1]
+    ray_direction = [-0.1, -0.1, -1]
+    result = m.intersect(ray_origin, ray_direction)
+    assert len(result) == 1
+    assert result.coords[0][0] == 0.4
+    assert result.coords[0][1] == 0.4
+
 
 def test_occulsion():
     m = mesh_plane()
@@ -101,3 +127,12 @@ def test_occulsion_miss():
     occ = m.occlusion(ray_origin, ray_direction)
     assert len(occ) == 1
     assert occ[0] == False
+
+def test_hit_vertice():
+    m = mesh_plane()
+    m.build("medium")
+    ray_origin = [0, 0, 0]
+    ray_direction = [0, 0, 1]
+    result = m.intersect(ray_origin, ray_direction)
+    assert len(result) == 1
+    assert result.coords[0][0] == 0

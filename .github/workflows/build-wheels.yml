@@ -36,8 +36,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install cibuildwheel twine nanobind
+          pipx install cibuildwheel twine
 
       - uses: pypa/cibuildwheel@v2.21
         env:

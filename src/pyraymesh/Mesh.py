@@ -5,7 +5,7 @@ from .IntersectionResult import IntersectionResult
 from typing import List, Iterable, Union
 
 
-def prep_rays(ray_origin, ray_direction, tmin=0, tfar=np.inf):
+def _prep_rays(ray_origin, ray_direction, tmin=0, tfar=np.inf):
     ray_origin = np.array(ray_origin, dtype=np.float32)
     ray_direction = np.array(ray_direction, dtype=np.float32)
     if len(ray_origin.shape) == 1:
@@ -61,7 +61,7 @@ class Mesh:
     def is_built(self) -> bool:
         return self._bvh is not None
 
-    def build(self, quality: str = "medium"):
+    def build(self, quality: str = "medium") -> None:
         """
         Builds the BVH (Bounding Volume Hierarchy) for the mesh with the specified quality.
 
@@ -81,10 +81,11 @@ class Mesh:
 
     def intersect(
         self,
-        ray_origin: Iterable[float],
-        ray_direction: Iterable[float],
+        ray_origin: Iterable[Iterable[float]],
+        ray_direction: Iterable[Iterable[float]],
         tnear: float = 0,
         tfar: float = np.inf,
+        calculate_reflections: bool = False,
     ) -> IntersectionResult:
         """
         Intersects the rays with the mesh.
@@ -106,19 +107,25 @@ class Mesh:
             self.build("medium")
             if not self.is_built:
                 raise ValueError("failed to build BVH")
-        ray_origin, ray_direction = prep_rays(ray_origin, ray_direction, tnear, tfar)
+        ray_origin, ray_direction = _prep_rays(ray_origin, ray_direction, tnear, tfar)
 
-        coords, tri_ids, distances = _bvh_bind_ext.intersect_bvh(
-            self._bvh, ray_origin, ray_direction, tnear, tfar, self.robust
-        )
+        if calculate_reflections:
+            coords, tri_ids, distances, reflections = _bvh_bind_ext.intersect_bvh(
+                self._bvh, ray_origin, ray_direction, tnear, tfar, calculate_reflections, self.robust
+            )
+        else:
+            coords, tri_ids, distances = _bvh_bind_ext.intersect_bvh(
+                self._bvh, ray_origin, ray_direction, tnear, tfar, calculate_reflections, self.robust
+            )
+            reflections = np.empty((0, 3))
 
-        return IntersectionResult(coords, tri_ids, distances)
+        return IntersectionResult(coords=coords, tri_ids=tri_ids, distances=distances, reflections=reflections)
 
     def occlusion(
         self,
         ray_origin: Iterable[float],
         ray_direction: Iterable[float],
-        tmin=0,
+        tnear=0,
         tfar=np.inf,
     ) -> np.ndarray:
         """
@@ -127,11 +134,11 @@ class Mesh:
         Parameters:
         ray_origin (array-like): The origin points of the rays.
         ray_direction (array-like): The direction vectors of the rays.
-        tmin (float, optional): The minimum distance along the ray to consider for occlusion. Defaults to 0.
+        tnear (float, optional): The minimum distance along the ray to consider for occlusion. Defaults to 0.
         tfar (float, optional): The maximum distance along the ray to consider for occlusion. Defaults to np.inf.
 
         Returns:
-        hist: (list of bool) A list of boolean values indicating whether the ray is occluded.
+        bool: (list of bool) A list of boolean values indicating whether the ray is occluded.
 
         Raises:
         ValueError: If the BVH is not built and cannot be built with the specified quality.
@@ -139,10 +146,10 @@ class Mesh:
         if not self.is_built:
             print("BVH not built, building now with medium quality")
             self.build("medium")
-        ray_origin, ray_direction = prep_rays(ray_origin, ray_direction, tmin, tfar)
+        ray_origin, ray_direction = _prep_rays(ray_origin, ray_direction, tnear, tfar)
 
         return np.array(
             _bvh_bind_ext.occlude_bvh(
-                self._bvh, ray_origin, ray_direction, tmin, tfar, self.robust
+                self._bvh, ray_origin, ray_direction, tnear, tfar, self.robust
             )
         )
