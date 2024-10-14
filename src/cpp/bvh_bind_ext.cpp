@@ -1,7 +1,4 @@
-//
-// Created by Dag Wästberg on 2024-10-02.
-//
-
+#include "types.h"
 #include "utils.h"
 #include "Accel.h"
 
@@ -25,6 +22,8 @@ namespace nb = nanobind;
 using namespace nb::literals;
 
 constexpr Scalar ScalarNAN = std::numeric_limits<Scalar>::quiet_NaN();
+constexpr size_t INVALID_ID = std::numeric_limits<size_t>::max();
+
 
 auto build_bvh(const nb::ndarray<Scalar, nb::shape<-1, 3>> &vertices, const nb::ndarray<int, nb::shape<-1, 3>> &indices,
                const std::string &quality = "medium")
@@ -47,15 +46,14 @@ auto build_bvh(const nb::ndarray<Scalar, nb::shape<-1, 3>> &vertices, const nb::
 nb::tuple intersect_bvh(const Accel &bvh_accel, const nb::ndarray<Scalar, nb::shape<-1, 3>> &origins,
                         const nb::ndarray<Scalar, nb::shape<-1, 3>> &directions, Scalar tmin,
                         Scalar tmax, bool calculate_reflections, bool robust = true) {
-    static constexpr size_t invalid_id = std::numeric_limits<size_t>::max();
 
     auto rays = pack_rays(origins, directions, tmin, tmax);
     size_t num_rays = rays.size();
 
-    auto *hit_coords = new std::vector<Scalar>();
+    auto hit_coords = std::make_unique<std::vector<Scalar>>();
     hit_coords->reserve(num_rays * 3);
 
-    auto *hit_reflections = new std::vector<Scalar>();
+    auto hit_reflections = std::make_unique<std::vector<Scalar>>();
     if (calculate_reflections) {
         hit_reflections->reserve(num_rays * 3);
     }
@@ -64,14 +62,13 @@ nb::tuple intersect_bvh(const Accel &bvh_accel, const nb::ndarray<Scalar, nb::sh
     tri_ids.reserve(num_rays);
 
     std::vector<Scalar> t_values;
+    t_values.reserve(num_rays);
 
-    auto intersect_fn = intersect_accel<false, false>;
-    if (robust)
-        intersect_fn = intersect_accel<false, true>;
+    auto intersect_fn = robust ? intersect_accel<false, true> : intersect_accel<false, false>;
 
     for (auto ray: rays) {
         auto prim_id = intersect_fn(ray, bvh_accel);
-        if (prim_id != invalid_id) {
+        if (prim_id != INVALID_ID) {
             auto hit = ray.org + ray.dir * ray.tmax;
             hit_coords->push_back(hit[0]);
             hit_coords->push_back(hit[1]);
@@ -99,17 +96,15 @@ nb::tuple intersect_bvh(const Accel &bvh_accel, const nb::ndarray<Scalar, nb::sh
         }
     }
     // Delete 'data' when the 'hit_owner' capsule expires
-    nb::capsule hit_owner(hit_coords, [](void *p) noexcept {
-        delete static_cast<std::vector<Scalar> *>(p);
-    });
+//    nb::capsule hit_owner(hit_coords, [](void *p) noexcept {
+//        delete static_cast<std::vector<Scalar> *>(p);
+//    });
     auto nd_hit_coord = nb::ndarray<nb::numpy, Scalar, nb::shape<-1, 3>>(hit_coords->data(),
-                                                                         {num_rays, 3}, hit_owner);
+                                                                         {num_rays, 3});
     if (calculate_reflections) {
-        nb::capsule reflection_owner(hit_reflections, [](void *p) noexcept {
-            delete static_cast<std::vector<Scalar> *>(p);
-        });
+
         auto nd_hit_reflections = nb::ndarray<nb::numpy, Scalar, nb::shape<-1, 3>>(hit_reflections->data(),
-                                                                                   {num_rays, 3}, reflection_owner);
+                                                                                   {num_rays, 3});
         return nb::make_tuple(nd_hit_coord, tri_ids, t_values, nd_hit_reflections);
     } else {
         return nb::make_tuple(nd_hit_coord, tri_ids, t_values);
@@ -120,20 +115,19 @@ std::vector<bool> occlude_bvh(const Accel &bvh_accel, const nb::ndarray<Scalar, 
                               const nb::ndarray<Scalar, nb::shape<-1, 3>> &directions, Scalar tmin = 0,
                               Scalar tmax = std::numeric_limits<Scalar>::max(), bool robust = true)
 {
-    static constexpr size_t invalid_id = std::numeric_limits<size_t>::max();
+
 
     auto rays = pack_rays(origins, directions, tmin, tmax);
     size_t num_rays = rays.size();
 
     std::vector<bool> results;
     results.reserve(num_rays);
-    auto intersect_fn = intersect_accel<true, true>;
-    if (!robust)
-        intersect_fn = intersect_accel<true, false>;
+    auto intersect_fn = robust ? intersect_accel<true, true> : intersect_accel<true, false>;
+
     for (auto ray : rays)
     {
         auto prim_id = intersect_fn(ray, bvh_accel);
-        results.push_back(prim_id != invalid_id);
+        results.push_back(prim_id != INVALID_ID);
     }
     return results;
 }
