@@ -59,12 +59,15 @@ ray_direction = [0, 0, -1]  # multiple rays with same direction
 ray_origin = [0.1, 0.2, 1]
 ray_direction = [[0, 0, -1], [0, 0, 1]]  # multiple rays with same origin
 
-result = mesh.intersect(ray_origin, ray_direction, tmin=0, tfar=1000)
+result = mesh.intersect(ray_origin, ray_direction, tnear=0, tfar=1000)
 print(result.num_hits)
 print(result.coords)
 print(result.tri_ids)
 print(result.distances)
 ```
+If you set `tnear` to a value greater than 0, the intersection tests will ignore any intersections that are closer 
+than `tnear`. Similarly, if you set `tfar` to a value less than infinity, the intersection tests will ignore any 
+intersections that are farther than `tfar`.
 
 ### Reflections
 
@@ -74,7 +77,7 @@ parameter to the `intersect` method:
 ```python
 ray_origin = [[0.1, 0.2, 1], [0.2, 0.1, 1]]
 ray_direction = [[0, 0, -1], [0, 0, 1]]
-result = mesh.intersect(ray_origin, ray_direction, tmin=0, tfar=1000, calculate_reflections=True)
+result = mesh.intersect(ray_origin, ray_direction, tnear=0, tfar=1000, calculate_reflections=True)
 print(result.reflections)
 ```
 results.reflections is a list  of noramlized vectors representing the directions of the 
