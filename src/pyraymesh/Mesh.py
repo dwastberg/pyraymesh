@@ -125,7 +125,7 @@ class Mesh:
         self,
         ray_origin: Iterable[float],
         ray_direction: Iterable[float],
-        tmin=0,
+        tnear=0,
         tfar=np.inf,
     ) -> np.ndarray:
         """
@@ -134,7 +134,7 @@ class Mesh:
         Parameters:
         ray_origin (array-like): The origin points of the rays.
         ray_direction (array-like): The direction vectors of the rays.
-        tmin (float, optional): The minimum distance along the ray to consider for occlusion. Defaults to 0.
+        tnear (float, optional): The minimum distance along the ray to consider for occlusion. Defaults to 0.
         tfar (float, optional): The maximum distance along the ray to consider for occlusion. Defaults to np.inf.
 
         Returns:
@@ -146,10 +146,10 @@ class Mesh:
         if not self.is_built:
             print("BVH not built, building now with medium quality")
             self.build("medium")
-        ray_origin, ray_direction = _prep_rays(ray_origin, ray_direction, tmin, tfar)
+        ray_origin, ray_direction = _prep_rays(ray_origin, ray_direction, tnear, tfar)
 
         return np.array(
             _bvh_bind_ext.occlude_bvh(
-                self._bvh, ray_origin, ray_direction, tmin, tfar, self.robust
+                self._bvh, ray_origin, ray_direction, tnear, tfar, self.robust
             )
         )
