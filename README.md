@@ -59,7 +59,7 @@ ray_direction = [0, 0, -1]  # multiple rays with same direction
 ray_origin = [0.1, 0.2, 1]
 ray_direction = [[0, 0, -1], [0, 0, 1]]  # multiple rays with same origin
 
-result = mesh.intersect(ray_origin, ray_direction, tmin=0, tfar=1e3)
+result = mesh.intersect(ray_origin, ray_direction, tnear=0, tfar=1e3)
 print(result.num_hits)
 print(result.coords)
 print(result.tri_ids)

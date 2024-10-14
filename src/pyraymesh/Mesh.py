@@ -87,7 +87,7 @@ class Mesh:
         tfar: float = np.inf,
     ) -> IntersectionResult:
         """
-        Intersects the rays with the BVH (Bounding Volume Hierarchy) of the mesh.
+        Intersects the rays with the mesh.
 
         Parameters:
         ray_origin (array-like): The origin points of the rays.
