@@ -96,15 +96,6 @@ occluded = mesh.occlusion(ray_origin, ray_direction)
 print(occluded)
 ```
 
-### Numerical Robustness
-
-In some corner cases the intersection tests may fail due to numerical issues. To mitigate this, you can set 
-`mesh.robust = True` which will use a more numerically robust approach at the cost of speed.
-For details on what this does and when it might be needed, see [this](https://jcgt.org/published/0002/02/02/paper-original.pdf) paper.
-
-
-
-
 ## Testing
 
 To run the tests:
