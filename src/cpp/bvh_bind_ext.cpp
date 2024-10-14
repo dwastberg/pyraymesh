@@ -45,9 +45,8 @@ auto build_bvh(const nb::ndarray<Scalar, nb::shape<-1, 3>> &vertices, const nb::
 }
 
 nb::tuple intersect_bvh(const Accel &bvh_accel, const nb::ndarray<Scalar, nb::shape<-1, 3>> &origins,
-                        const nb::ndarray<Scalar, nb::shape<-1, 3>> &directions, Scalar tmin = 0,
-                        Scalar tmax = std::numeric_limits<Scalar>::max(), bool robust = true)
-{
+                        const nb::ndarray<Scalar, nb::shape<-1, 3>> &directions, Scalar tmin,
+                        Scalar tmax, bool calculate_reflections, bool robust = true) {
     static constexpr size_t invalid_id = std::numeric_limits<size_t>::max();
 
     auto rays = pack_rays(origins, directions, tmin, tmax);
@@ -55,6 +54,11 @@ nb::tuple intersect_bvh(const Accel &bvh_accel, const nb::ndarray<Scalar, nb::sh
 
     auto *hit_coords = new std::vector<Scalar>();
     hit_coords->reserve(num_rays * 3);
+
+    auto *hit_reflections = new std::vector<Scalar>();
+    if (calculate_reflections) {
+        hit_reflections->reserve(num_rays * 3);
+    }
 
     std::vector<int64_t> tri_ids;
     tri_ids.reserve(num_rays);
@@ -65,33 +69,51 @@ nb::tuple intersect_bvh(const Accel &bvh_accel, const nb::ndarray<Scalar, nb::sh
     if (robust)
         intersect_fn = intersect_accel<false, true>;
 
-    for (auto ray : rays)
-    {
+    for (auto ray: rays) {
         auto prim_id = intersect_fn(ray, bvh_accel);
-        if (prim_id != invalid_id)
-        {
+        if (prim_id != invalid_id) {
             auto hit = ray.org + ray.dir * ray.tmax;
             hit_coords->push_back(hit[0]);
             hit_coords->push_back(hit[1]);
             hit_coords->push_back(hit[2]);
             tri_ids.push_back(bvh_accel.permutation_map[prim_id]);
             t_values.push_back(ray.tmax);
-        }
-        else
-        {
+            if (calculate_reflections) {
+                auto hit_tri = bvh_accel.precomputed_tris[prim_id].convert_to_tri();
+                auto reflection = hit_reflection(hit_tri, ray.dir);
+                hit_reflections->push_back(reflection[0]);
+                hit_reflections->push_back(reflection[1]);
+                hit_reflections->push_back(reflection[2]);
+            }
+        } else {
             hit_coords->push_back(ScalarNAN);
             hit_coords->push_back(ScalarNAN);
             hit_coords->push_back(ScalarNAN);
             tri_ids.push_back(-1);
             t_values.push_back(ScalarNAN);
+            if (calculate_reflections) {
+                hit_reflections->push_back(ScalarNAN);
+                hit_reflections->push_back(ScalarNAN);
+                hit_reflections->push_back(ScalarNAN);
+            }
         }
     }
-    // Delete 'data' when the 'owner' capsule expires
-    nb::capsule owner(hit_coords, [](void *p) noexcept
-                      { delete static_cast<std::vector<Scalar> *>(p); });
+    // Delete 'data' when the 'hit_owner' capsule expires
+    nb::capsule hit_owner(hit_coords, [](void *p) noexcept {
+        delete static_cast<std::vector<Scalar> *>(p);
+    });
     auto nd_hit_coord = nb::ndarray<nb::numpy, Scalar, nb::shape<-1, 3>>(hit_coords->data(),
-                                                                         {num_rays, 3}, owner);
-    return nb::make_tuple(nd_hit_coord, tri_ids, t_values);
+                                                                         {num_rays, 3}, hit_owner);
+    if (calculate_reflections) {
+        nb::capsule reflection_owner(hit_reflections, [](void *p) noexcept {
+            delete static_cast<std::vector<Scalar> *>(p);
+        });
+        auto nd_hit_reflections = nb::ndarray<nb::numpy, Scalar, nb::shape<-1, 3>>(hit_reflections->data(),
+                                                                                   {num_rays, 3}, reflection_owner);
+        return nb::make_tuple(nd_hit_coord, tri_ids, t_values, nd_hit_reflections);
+    } else {
+        return nb::make_tuple(nd_hit_coord, tri_ids, t_values);
+    }
 }
 
 std::vector<bool> occlude_bvh(const Accel &bvh_accel, const nb::ndarray<Scalar, nb::shape<-1, 3>> &origins,
@@ -116,14 +138,14 @@ std::vector<bool> occlude_bvh(const Accel &bvh_accel, const nb::ndarray<Scalar, 
     return results;
 }
 
-NB_MODULE(_bvh_bind_ext, m)
-{
+
+NB_MODULE(_bvh_bind_ext, m) {
     m.doc() = "This is a \"hello world\" example with nanobind3";
     nb::class_<Accel>(m, "Accel")
         .def(nb::init<const std::vector<Tri> &, const std::string &>());
     m.def("build_bvh", &build_bvh, "vertices"_a, "indices"_a, "quality"_a = "medium");
-    m.def("intersect_bvh", &intersect_bvh, "bvh_accel"_a, "origins"_a, "directions"_a, "tmin"_a = 0,
-          "tmax"_a = std::numeric_limits<Scalar>::max(), "robust"_a = false);
+    m.def("intersect_bvh", &intersect_bvh, "bvh_accel"_a, "origins"_a, "directions"_a, "tmin"_a,
+          "tmax"_a, "calculate_reflections"_a,"robust"_a = true);
     m.def("occlude_bvh", &occlude_bvh, "bvh_accel"_a, "origins"_a, "directions"_a, "tmin"_a = 0,
           "tmax"_a = std::numeric_limits<Scalar>::max(), "robust"_a = false);
 }

@@ -22,7 +22,7 @@ def rays():
         ]
     )
     ray_direction = np.array(
-        [[0, 0, -1], [0, 0, -1], [0, 0, -1], [0, 0, 1], [0, 0, 1], [0, 0, 1]]
+        [[0, 0, -1], [0, 0, -1], [0, 0, -1], [0, 0, -1], [0, 0, 1], [0, 0, 1]]
     )
     return ray_origin, ray_direction
 
@@ -34,7 +34,7 @@ def test_multiple_ray_intersect():
     result = m.intersect(ray_origin, ray_direction)
 
     assert len(result) == 6
-    assert (result.num_hits) == 3
+    assert (result.num_hits) == 4
 
     assert result.coords[0][0] == 0.01
     assert result.coords[0][1] == 0.002
@@ -57,7 +57,7 @@ def test_multiple_ray_intersect():
 
     hit_mask = result.hit_mask
     hit_coords = result.coords[hit_mask]
-    assert len(hit_coords) == 3
+    assert len(hit_coords) == 4
     for h in hit_coords:
         assert np.isnan(h).any() == False
 
@@ -72,6 +72,6 @@ def test_multiple_ray_occlude():
     assert result[0] == True
     assert result[1] == True
     assert result[2] == True
-    assert result[3] == False
+    assert result[3] == True
     assert result[4] == False
     assert result[5] == False
