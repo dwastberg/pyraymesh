@@ -9,6 +9,16 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
 
+if(APPLE OR UNIX)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+endif()
+
+if (APPLE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexperimental-library")
+endif()
+
+MESSAGE(STATUS "CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
+
 find_package(Python 3.10 COMPONENTS Interpreter Development.Module REQUIRED)
 
 execute_process(
@@ -20,6 +30,7 @@ find_package(nanobind CONFIG REQUIRED)
 
 include_directories(${CMAKE_SOURCE_DIR}/src/cpp/include)
 include_directories(${CMAKE_SOURCE_DIR}/src/cpp/contrib)
+
 
 nanobind_add_module(${BINDINGS} ${CMAKE_SOURCE_DIR}/src/cpp/bvh_bind_ext.cpp)
 

@@ -16,7 +16,11 @@
 #include <bvh/v2/executor.h>
 #include <bvh/v2/stack.h>
 #include <bvh/v2/tri.h>
+
+#include "BS_thread_pool.hpp"
+
 #include <iostream>
+
 
 namespace nb = nanobind;
 using namespace nb::literals;
@@ -45,7 +49,7 @@ auto build_bvh(const nb::ndarray<Scalar, nb::shape<-1, 3>> &vertices, const nb::
 
 nb::tuple intersect_bvh(const Accel &bvh_accel, const nb::ndarray<Scalar, nb::shape<-1, 3>> &origins,
                         const nb::ndarray<Scalar, nb::shape<-1, 3>> &directions, Scalar tmin,
-                        Scalar tmax, bool calculate_reflections, bool robust = true) {
+                        Scalar tmax, bool calculate_reflections, bool robust = true, size_t threads = 1) {
 
     auto rays = pack_rays(origins, directions, tmin, tmax);
     size_t num_rays = rays.size();
@@ -58,53 +62,93 @@ nb::tuple intersect_bvh(const Accel &bvh_accel, const nb::ndarray<Scalar, nb::sh
         hit_reflections->reserve(num_rays * 3);
     }
 
-    std::vector<int64_t> tri_ids;
-    tri_ids.reserve(num_rays);
+    // std::vector<int64_t> tri_ids;
+    auto tri_ids = std::make_unique<std::vector<int64_t>>();
+    tri_ids->reserve(num_rays);
 
-    std::vector<Scalar> t_values;
-    t_values.reserve(num_rays);
+    auto t_values = std::make_unique<std::vector<Scalar>>();
+    t_values->reserve(num_rays);
+
 
     auto intersect_fn = robust ? intersect_accel<false, true> : intersect_accel<false, false>;
 
-    for (auto ray: rays) {
+    BS::thread_pool pool(threads);
+
+    pool.detach_loop<size_t>(0, num_rays,
+                             [&](size_t i) {
+        auto ray = rays[i];
         auto prim_id = intersect_fn(ray, bvh_accel);
         if (prim_id != INVALID_ID) {
             auto hit = ray.org + ray.dir * ray.tmax;
-            hit_coords->push_back(hit[0]);
-            hit_coords->push_back(hit[1]);
-            hit_coords->push_back(hit[2]);
-            tri_ids.push_back(bvh_accel.permutation_map[prim_id]);
-            t_values.push_back(ray.tmax);
+            (*hit_coords)[i * 3 + 0] = hit[0];
+            (*hit_coords)[i * 3 + 1] = hit[1];
+            (*hit_coords)[i * 3 + 2] = hit[2];
+            (*tri_ids)[i] = bvh_accel.permutation_map[prim_id];
+            (*t_values)[i] = ray.tmax;
             if (calculate_reflections) {
                 auto hit_tri = bvh_accel.precomputed_tris[prim_id].convert_to_tri();
                 auto reflection = hit_reflection(hit_tri, ray.dir);
-                hit_reflections->push_back(reflection[0]);
-                hit_reflections->push_back(reflection[1]);
-                hit_reflections->push_back(reflection[2]);
+                (*hit_reflections)[i * 3 + 0] = reflection[0];
+                (*hit_reflections)[i * 3 + 1] = reflection[1];
+                (*hit_reflections)[i * 3 + 2] = reflection[2];
             }
         } else {
-            hit_coords->push_back(ScalarNAN);
-            hit_coords->push_back(ScalarNAN);
-            hit_coords->push_back(ScalarNAN);
-            tri_ids.push_back(-1);
-            t_values.push_back(ScalarNAN);
+            (*hit_coords)[i * 3 + 0] = ScalarNAN;
+            (*hit_coords)[i * 3 + 1] = ScalarNAN;
+            (*hit_coords)[i * 3 + 2] = ScalarNAN;
+            (*tri_ids)[i] = -1;
+            (*t_values)[i] = ScalarNAN;
             if (calculate_reflections) {
-                hit_reflections->push_back(ScalarNAN);
-                hit_reflections->push_back(ScalarNAN);
-                hit_reflections->push_back(ScalarNAN);
+                (*hit_reflections)[i * 3 + 0] = ScalarNAN;
+                (*hit_reflections)[i * 3 + 1] = ScalarNAN;
+                (*hit_reflections)[i * 3 + 2] = ScalarNAN;
             }
         }
-    }
+    });
+    pool.wait();
+
+
+//    for (auto ray: rays) {
+//        auto prim_id = intersect_fn(ray, bvh_accel);
+//        if (prim_id != INVALID_ID) {
+//            auto hit = ray.org + ray.dir * ray.tmax;
+//            hit_coords->push_back(hit[0]);
+//            hit_coords->push_back(hit[1]);
+//            hit_coords->push_back(hit[2]);
+//            tri_ids.push_back(bvh_accel.permutation_map[prim_id]);
+//            t_values.push_back(ray.tmax);
+//            if (calculate_reflections) {
+//                auto hit_tri = bvh_accel.precomputed_tris[prim_id].convert_to_tri();
+//                auto reflection = hit_reflection(hit_tri, ray.dir);
+//                hit_reflections->push_back(reflection[0]);
+//                hit_reflections->push_back(reflection[1]);
+//                hit_reflections->push_back(reflection[2]);
+//            }
+//        } else {
+//            hit_coords->push_back(ScalarNAN);
+//            hit_coords->push_back(ScalarNAN);
+//            hit_coords->push_back(ScalarNAN);
+//            tri_ids.push_back(-1);
+//            t_values.push_back(ScalarNAN);
+//            if (calculate_reflections) {
+//                hit_reflections->push_back(ScalarNAN);
+//                hit_reflections->push_back(ScalarNAN);
+//                hit_reflections->push_back(ScalarNAN);
+//            }
+//        }
+//    }
 
     auto nd_hit_coord = nb::ndarray<nb::numpy, Scalar, nb::shape<-1, 3>>(hit_coords->data(),
                                                                          {num_rays, 3});
+    auto nd_tri_ids = nb::ndarray<nb::numpy, int64_t, nb::shape<-1>>(tri_ids->data(), {num_rays});
+    auto nd_t_values = nb::ndarray<nb::numpy, Scalar, nb::shape<-1>>(t_values->data(), {num_rays});å
     if (calculate_reflections) {
 
         auto nd_hit_reflections = nb::ndarray<nb::numpy, Scalar, nb::shape<-1, 3>>(hit_reflections->data(),
                                                                                    {num_rays, 3});
-        return nb::make_tuple(nd_hit_coord, tri_ids, t_values, nd_hit_reflections);
+        return nb::make_tuple(nd_hit_coord, nd_tri_ids, nd_t_values, nd_hit_reflections);
     } else {
-        return nb::make_tuple(nd_hit_coord, tri_ids, t_values);
+        return nb::make_tuple(nd_hit_coord, nd_tri_ids, nd_t_values);
     }
 }
 
@@ -136,7 +180,7 @@ NB_MODULE(_bvh_bind_ext, m) {
         .def(nb::init<const std::vector<Tri> &, const std::string &>());
     m.def("build_bvh", &build_bvh, "vertices"_a, "indices"_a, "quality"_a = "medium");
     m.def("intersect_bvh", &intersect_bvh, "bvh_accel"_a, "origins"_a, "directions"_a, "tmin"_a,
-          "tmax"_a, "calculate_reflections"_a,"robust"_a = true);
+          "tmax"_a, "calculate_reflections"_a,"robust"_a = true, "threads"_a = 1);
     m.def("occlude_bvh", &occlude_bvh, "bvh_accel"_a, "origins"_a, "directions"_a, "tmin"_a = 0,
           "tmax"_a = std::numeric_limits<Scalar>::max(), "robust"_a = false);
 }
