@@ -95,10 +95,7 @@ nb::tuple intersect_bvh(const Accel &bvh_accel, const nb::ndarray<Scalar, nb::sh
             }
         }
     }
-    // Delete 'data' when the 'hit_owner' capsule expires
-//    nb::capsule hit_owner(hit_coords, [](void *p) noexcept {
-//        delete static_cast<std::vector<Scalar> *>(p);
-//    });
+
     auto nd_hit_coord = nb::ndarray<nb::numpy, Scalar, nb::shape<-1, 3>>(hit_coords->data(),
                                                                          {num_rays, 3});
     if (calculate_reflections) {
