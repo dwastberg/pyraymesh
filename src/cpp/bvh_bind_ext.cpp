@@ -141,7 +141,7 @@ nb::tuple intersect_bvh(const Accel &bvh_accel, const nb::ndarray<Scalar, nb::sh
     auto nd_hit_coord = nb::ndarray<nb::numpy, Scalar, nb::shape<-1, 3>>(hit_coords->data(),
                                                                          {num_rays, 3});
     auto nd_tri_ids = nb::ndarray<nb::numpy, int64_t, nb::shape<-1>>(tri_ids->data(), {num_rays});
-    auto nd_t_values = nb::ndarray<nb::numpy, Scalar, nb::shape<-1>>(t_values->data(), {num_rays});å
+    auto nd_t_values = nb::ndarray<nb::numpy, Scalar, nb::shape<-1>>(t_values->data(), {num_rays});
     if (calculate_reflections) {
 
         auto nd_hit_reflections = nb::ndarray<nb::numpy, Scalar, nb::shape<-1, 3>>(hit_reflections->data(),

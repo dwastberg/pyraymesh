@@ -86,6 +86,7 @@ class Mesh:
         tnear: float = 0,
         tfar: float = np.finfo(np.float32).max,
         calculate_reflections: bool = False,
+        threads: int = 1,
     ) -> IntersectionResult:
         """
         Intersects the rays with the mesh.
@@ -111,11 +112,11 @@ class Mesh:
 
         if calculate_reflections:
             coords, tri_ids, distances, reflections = _bvh_bind_ext.intersect_bvh(
-                self._bvh, ray_origin, ray_direction, tnear, tfar, calculate_reflections, self.robust
+                self._bvh, ray_origin, ray_direction, tnear, tfar, calculate_reflections, self.robust, threads
             )
         else:
             coords, tri_ids, distances = _bvh_bind_ext.intersect_bvh(
-                self._bvh, ray_origin, ray_direction, tnear, tfar, calculate_reflections, self.robust
+                self._bvh, ray_origin, ray_direction, tnear, tfar, calculate_reflections, self.robust, threads
             )
             reflections = np.empty((0, 3))
 
