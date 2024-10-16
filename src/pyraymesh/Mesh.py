@@ -3,7 +3,7 @@ import numpy as np
 from . import _bvh_bind_ext
 from .IntersectionResult import IntersectionResult
 from typing import List, Iterable, Union
-
+import os
 
 def _prep_rays(ray_origin, ray_direction):
     ray_origin = np.array(ray_origin, dtype=np.float32)
@@ -110,6 +110,9 @@ class Mesh:
                 raise ValueError("failed to build BVH")
         ray_origin, ray_direction = _prep_rays(ray_origin, ray_direction)
 
+        if threads < 1:
+            threads = os.cpu_count()
+
         if calculate_reflections:
             coords, tri_ids, distances, reflections = _bvh_bind_ext.intersect_bvh(
                 self._bvh, ray_origin, ray_direction, tnear, tfar, calculate_reflections, self.robust, threads
@@ -128,6 +131,7 @@ class Mesh:
         ray_direction: Iterable[float],
         tnear=0,
         tfar=np.finfo(np.float32).max,
+        threads: int = 1,
     ) -> np.ndarray:
         """
         Checks for occlusion along the rays with the BVH (Bounding Volume Hierarchy) of the mesh.
@@ -147,10 +151,11 @@ class Mesh:
         if not self.is_built:
             print("BVH not built, building now with medium quality")
             self.build("medium")
+        if threads < 1:
+            threads = os.cpu_count()
         ray_origin, ray_direction = _prep_rays(ray_origin, ray_direction)
-
-        return np.array(
-            _bvh_bind_ext.occlude_bvh(
-                self._bvh, ray_origin, ray_direction, tnear, tfar, self.robust
-            )
+        result = _bvh_bind_ext.occlude_bvh(
+            self._bvh, ray_origin, ray_direction, tnear, tfar, self.robust, threads
         )
+        return result
+

@@ -6,6 +6,8 @@
 #include <nanobind/ndarray.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
+#include <nanobind/stl/unique_ptr.h>
+#include <nanobind/stl/shared_ptr.h>
 
 #include <bvh/v2/bvh.h>
 #include <bvh/v2/vec.h>
@@ -55,19 +57,19 @@ nb::tuple intersect_bvh(const Accel &bvh_accel, const nb::ndarray<Scalar, nb::sh
     size_t num_rays = rays.size();
 
     auto hit_coords = std::make_unique<std::vector<Scalar>>();
-    hit_coords->reserve(num_rays * 3);
+    hit_coords->resize(num_rays * 3);
 
     auto hit_reflections = std::make_unique<std::vector<Scalar>>();
     if (calculate_reflections) {
-        hit_reflections->reserve(num_rays * 3);
+        hit_reflections->resize(num_rays * 3);
     }
 
     // std::vector<int64_t> tri_ids;
     auto tri_ids = std::make_unique<std::vector<int64_t>>();
-    tri_ids->reserve(num_rays);
+    tri_ids->resize(num_rays);
 
     auto t_values = std::make_unique<std::vector<Scalar>>();
-    t_values->reserve(num_rays);
+    t_values->resize(num_rays);
 
 
     auto intersect_fn = robust ? intersect_accel<false, true> : intersect_accel<false, false>;
@@ -152,25 +154,39 @@ nb::tuple intersect_bvh(const Accel &bvh_accel, const nb::ndarray<Scalar, nb::sh
     }
 }
 
-std::vector<bool> occlude_bvh(const Accel &bvh_accel, const nb::ndarray<Scalar, nb::shape<-1, 3>> &origins,
+auto occlude_bvh(const Accel &bvh_accel, const nb::ndarray<Scalar, nb::shape<-1, 3>> &origins,
                               const nb::ndarray<Scalar, nb::shape<-1, 3>> &directions, Scalar tmin = 0,
-                              Scalar tmax = std::numeric_limits<Scalar>::max(), bool robust = true)
+                              Scalar tmax = std::numeric_limits<Scalar>::max(), bool robust = true, size_t threads = 1)
 {
 
 
     auto rays = pack_rays(origins, directions, tmin, tmax);
-    size_t num_rays = rays.size();
+    const size_t num_rays = rays.size();
 
-    std::vector<bool> results;
-    results.reserve(num_rays);
+
+    auto results = new uint8_t[num_rays];
+//    auto results = nb::ndarray<uint8_t, nb::numpy, nb::ndim<1>>();
     auto intersect_fn = robust ? intersect_accel<true, true> : intersect_accel<true, false>;
 
-    for (auto ray : rays)
-    {
-        auto prim_id = intersect_fn(ray, bvh_accel);
-        results.push_back(prim_id != INVALID_ID);
-    }
-    return results;
+    BS::thread_pool pool(threads);
+
+    pool.detach_loop<size_t>(0, num_rays,
+                             [&](size_t i) {
+                                 auto ray = rays[i];
+                                 auto prim_id = intersect_fn(ray, bvh_accel);
+                                 // (*results)[i] = (prim_id != INVALID_ID) ? 1 : 0;
+                                 bool hit = (prim_id != INVALID_ID);
+                                 auto result = hit ? 1 : 0;
+                                 results[i] = result;
+                             }
+    );
+    pool.wait();
+    nb::capsule owner(results, [](void *p) noexcept {
+        delete[] (float *) p;
+    });
+    return nb::ndarray<nb::numpy, uint8_t, nb::ndim<1>>(results, {num_rays}, owner);
+//    auto nd_results = nb::ndarray<nb::numpy, uint8_t, nb::shape<-1>>(results->data(), {num_rays});
+//    return nd_results;
 }
 
 
@@ -182,5 +198,5 @@ NB_MODULE(_bvh_bind_ext, m) {
     m.def("intersect_bvh", &intersect_bvh, "bvh_accel"_a, "origins"_a, "directions"_a, "tmin"_a,
           "tmax"_a, "calculate_reflections"_a,"robust"_a = true, "threads"_a = 1);
     m.def("occlude_bvh", &occlude_bvh, "bvh_accel"_a, "origins"_a, "directions"_a, "tmin"_a = 0,
-          "tmax"_a = std::numeric_limits<Scalar>::max(), "robust"_a = false);
+          "tmax"_a = std::numeric_limits<Scalar>::max(), "robust"_a = false, "threads"_a = 1);
 }
