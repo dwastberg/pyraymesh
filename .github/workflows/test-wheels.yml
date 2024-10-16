@@ -1,4 +1,4 @@
-name: Test Python Package
+name: Test Pyraymesh
 
 on:
   workflow_call:
