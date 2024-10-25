@@ -65,9 +65,15 @@ print(result.coords)
 print(result.tri_ids)
 print(result.distances)
 ```
+
+`tnear` and `tfar` can be scalars or lists of the same length as the number of rays. If they are scalars, the same
+value will be used for all rays. If they are lists, each value will be used for the corresponding ray.
+
 If you set `tnear` to a value greater than 0, the intersection tests will ignore any intersections that are closer 
 than `tnear`. Similarly, if you set `tfar` to a value less than infinity, the intersection tests will ignore any 
 intersections that are farther than `tfar`.
+
+
 
 ### Reflections
 
@@ -90,7 +96,7 @@ intersection tests.
 
 If you just care about whether a ray is occluded or not (i.e., you don't care about
 the intersection point) you can use the `occlusion` method which is faster than the
-`intersect` method and just returns list of booleans.
+`intersect` method and just returns an array of booleans.
 
 ```python
 ray_origin = [[0.1, 0.2, 1], [0.2, 0.1, 1]]
@@ -98,6 +104,22 @@ ray_direction = [[0, 0, -1], [0, 0, 1]]
 occluded = mesh.occlusion(ray_origin, ray_direction)
 print(occluded)
 ```
+
+### Parallelization
+
+The `intersect` and `occlusion` methods can be parallelized by passing `threads` parameter when calling the methods:
+
+```python
+result = mesh.intersect(ray_origin, ray_direction, tnear=0, tfar=1000, threads=4)
+```
+
+The `threads` parameter specifies the number of threads to use for the intersection tests. If set to `-1`, 
+the number of threads will be equal to the number of cores on the machine. In general you shouldn't set the number of 
+threads to be greater than the number of cores on the machine.
+
+For a small number of rays, the overhead of parallelization might make the parallel version slower than the serial
+version, so it is recommended to test the performance of both versions for your specific use case.
+
 
 ## Testing
 
