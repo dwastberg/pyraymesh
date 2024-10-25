@@ -172,15 +172,10 @@ class Mesh:
             self.build("medium")
         if threads < 1:
             threads = os.cpu_count()
-        ray_origin, ray_direction = _prep_rays(ray_origin, ray_direction)
+        ray_origin, ray_direction, tnear,tfar = _prep_rays(ray_origin, ray_direction, tnear, tfar)
         result = _bvh_bind_ext.occlude_bvh(
             self._bvh, ray_origin, ray_direction, tnear, tfar, self.robust, threads
-        ray_origin, ray_direction, tnear, tfar = _prep_rays(ray_origin, ray_direction, tnear, tfar)
-
-        return np.array(
-            _bvh_bind_ext.occlude_bvh(
-                self._bvh, ray_origin, ray_direction, tnear, tfar, self.robust
-            )
         )
+
         return result
 
