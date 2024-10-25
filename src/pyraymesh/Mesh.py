@@ -100,8 +100,8 @@ class Mesh:
 
     def intersect(
         self,
-        ray_origin: Iterable[Iterable[float]],
-        ray_direction: Iterable[Iterable[float]],
+        ray_origin: Union[Iterable[float],Iterable[Iterable[float]]],
+        ray_direction: Union[Iterable[float],Iterable[Iterable[float]]],
         tnear: Union[float,Iterable[float]] = 0,
         tfar: Union[float,Iterable[float]]  = np.finfo(np.float32).max,
         calculate_reflections: bool = False,
