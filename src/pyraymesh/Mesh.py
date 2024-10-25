@@ -1,11 +1,15 @@
+from unicodedata import numeric
+
 import numpy as np
 
 from . import _bvh_bind_ext
 from .IntersectionResult import IntersectionResult
 from typing import List, Iterable, Union
+import numbers
 
 
-def _prep_rays(ray_origin, ray_direction):
+
+def _prep_rays(ray_origin, ray_direction, tnear, tfar):
     ray_origin = np.array(ray_origin, dtype=np.float32)
     ray_direction = np.array(ray_direction, dtype=np.float32)
     if len(ray_origin.shape) == 1:
@@ -24,7 +28,23 @@ def _prep_rays(ray_origin, ray_direction):
         raise ValueError(
             "ray_origin and ray_direction must have the same length or one of them must have length 1"
         )
-    return ray_origin, ray_direction
+    if isinstance(tnear, Iterable):
+        tnear = np.array(tnear, dtype=np.float32)
+    if isinstance(tfar, Iterable):
+        tfar = np.array(tfar, dtype=np.float32)
+    if isinstance(tnear, numbers.Number):
+        tnear = np.full(len(ray_origin), tnear, dtype=np.float32)
+    if isinstance(tfar, numbers.Number):
+        tfar = np.full(len(ray_origin), tfar, dtype=np.float32)
+    if len(tnear) != len(ray_origin):
+        raise ValueError(
+            "tnear must have the same length as ray_origin or be a single value"
+        )
+    if len(tfar) != len(ray_origin):
+        raise ValueError(
+            "tfar must have the same length as ray_origin or be a single value"
+        )
+    return ray_origin, ray_direction, tnear, tfar
 
 
 class Mesh:
@@ -77,14 +97,15 @@ class Mesh:
             raise ValueError("Quality must be one of 'low', 'medium' or 'high'")
         if len(self.vertices) == 0 or len(self.faces) == 0:
             raise ValueError("Mesh is empty")
+
         self._bvh = _bvh_bind_ext.build_bvh(self.vertices, self.faces, quality)
 
     def intersect(
         self,
         ray_origin: Iterable[Iterable[float]],
         ray_direction: Iterable[Iterable[float]],
-        tnear: float = 0,
-        tfar: float = np.finfo(np.float32).max,
+        tnear: Union[float,Iterable[float]] = 0,
+        tfar: Union[float,Iterable[float]]  = np.finfo(np.float32).max,
         calculate_reflections: bool = False,
     ) -> IntersectionResult:
         """
@@ -107,7 +128,7 @@ class Mesh:
             self.build("medium")
             if not self.is_built:
                 raise ValueError("failed to build BVH")
-        ray_origin, ray_direction = _prep_rays(ray_origin, ray_direction)
+        ray_origin, ray_direction, tnear, tfar = _prep_rays(ray_origin, ray_direction, tnear, tfar)
 
         if calculate_reflections:
             coords, tri_ids, distances, reflections = _bvh_bind_ext.intersect_bvh(
@@ -146,7 +167,7 @@ class Mesh:
         if not self.is_built:
             print("BVH not built, building now with medium quality")
             self.build("medium")
-        ray_origin, ray_direction = _prep_rays(ray_origin, ray_direction)
+        ray_origin, ray_direction, tnear, tfar = _prep_rays(ray_origin, ray_direction, tnear, tfar)
 
         return np.array(
             _bvh_bind_ext.occlude_bvh(

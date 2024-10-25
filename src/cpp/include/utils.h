@@ -65,8 +65,8 @@ static size_t intersect_accel(Ray &ray, const Accel &accel) {
 }
 
 std::vector<Ray> pack_rays(const nb::ndarray<Scalar, nb::shape<-1, 3>> &origins,
-                           const nb::ndarray<Scalar, nb::shape<-1, 3>> &directions, Scalar tmin = 0,
-                           Scalar tmax = std::numeric_limits<Scalar>::max()) {
+                           const nb::ndarray<Scalar, nb::shape<-1, 3>> &directions, const nb::ndarray<Scalar, nb::ndim<1>> &tnear,
+                           const nb::ndarray<Scalar, nb::ndim<1>> &tfar) {
     size_t num_rays = origins.shape(0);
     std::vector<Ray> rays;
     rays.reserve(num_rays);
@@ -74,7 +74,7 @@ std::vector<Ray> pack_rays(const nb::ndarray<Scalar, nb::shape<-1, 3>> &origins,
         rays.emplace_back(
                 Vec3(origins(i, 0), origins(i, 1), origins(i, 2)),
                 Vec3(directions(i, 0), directions(i, 1), directions(i, 2)),
-                tmin, tmax
+                tnear(i), tfar(i)
         );
     }
     return rays;

@@ -44,10 +44,10 @@ auto build_bvh(const nb::ndarray<Scalar, nb::shape<-1, 3>> &vertices, const nb::
 }
 
 nb::tuple intersect_bvh(const Accel &bvh_accel, const nb::ndarray<Scalar, nb::shape<-1, 3>> &origins,
-                        const nb::ndarray<Scalar, nb::shape<-1, 3>> &directions, Scalar tmin,
-                        Scalar tmax, bool calculate_reflections, bool robust = true) {
+                        const nb::ndarray<Scalar, nb::shape<-1, 3>> &directions, const nb::ndarray<Scalar, nb::ndim<1>> &tnear,
+                        const nb::ndarray<Scalar, nb::ndim<1>> &tfar, bool calculate_reflections, bool robust = true) {
 
-    auto rays = pack_rays(origins, directions, tmin, tmax);
+    auto rays = pack_rays(origins, directions, tnear, tfar);
     size_t num_rays = rays.size();
 
     auto hit_coords = std::make_unique<std::vector<Scalar>>();
@@ -109,12 +109,12 @@ nb::tuple intersect_bvh(const Accel &bvh_accel, const nb::ndarray<Scalar, nb::sh
 }
 
 std::vector<bool> occlude_bvh(const Accel &bvh_accel, const nb::ndarray<Scalar, nb::shape<-1, 3>> &origins,
-                              const nb::ndarray<Scalar, nb::shape<-1, 3>> &directions, Scalar tmin = 0,
-                              Scalar tmax = std::numeric_limits<Scalar>::max(), bool robust = true)
+                              const nb::ndarray<Scalar, nb::shape<-1, 3>> &directions, const nb::ndarray<Scalar, nb::ndim<1>> &tnear,
+                              const nb::ndarray<Scalar, nb::ndim<1>> &tfar, bool robust = true)
 {
 
 
-    auto rays = pack_rays(origins, directions, tmin, tmax);
+    auto rays = pack_rays(origins, directions, tnear, tfar);
     size_t num_rays = rays.size();
 
     std::vector<bool> results;
@@ -135,8 +135,8 @@ NB_MODULE(_bvh_bind_ext, m) {
     nb::class_<Accel>(m, "Accel")
         .def(nb::init<const std::vector<Tri> &, const std::string &>());
     m.def("build_bvh", &build_bvh, "vertices"_a, "indices"_a, "quality"_a = "medium");
-    m.def("intersect_bvh", &intersect_bvh, "bvh_accel"_a, "origins"_a, "directions"_a, "tmin"_a,
-          "tmax"_a, "calculate_reflections"_a,"robust"_a = true);
-    m.def("occlude_bvh", &occlude_bvh, "bvh_accel"_a, "origins"_a, "directions"_a, "tmin"_a = 0,
-          "tmax"_a = std::numeric_limits<Scalar>::max(), "robust"_a = false);
+    m.def("intersect_bvh", &intersect_bvh, "bvh_accel"_a, "origins"_a, "directions"_a, "tnear"_a,
+          "tfar"_a, "calculate_reflections"_a,"robust"_a = true);
+    m.def("occlude_bvh", &occlude_bvh, "bvh_accel"_a, "origins"_a, "directions"_a, "tnear"_a,"tfar"_a,
+          "robust"_a = false);
 }
