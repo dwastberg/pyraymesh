@@ -136,3 +136,12 @@ def test_hit_vertice():
     result = m.intersect(ray_origin, ray_direction)
     assert len(result) == 1
     assert result.coords[0][0] == 0
+
+def test_parallel_ray():
+    m = mesh_plane()
+    m.build("medium")
+    ray_origin = [0.5, 0.5, 1]
+    ray_direction = [0, 1, 0]
+    result = m.intersect(ray_origin, ray_direction)
+    assert len(result) == 1
+    assert np.isnan(result.coords[0][0])
