@@ -10,7 +10,6 @@
 
 #include <bvh/v2/vec.h>
 
-#include <bvh/v2/thread_pool.h>
 #include <bvh/v2/stack.h>
 #include <bvh/v2/tri.h>
 
@@ -177,7 +176,7 @@ auto count_intersections(const Accel &bvh_accel, const nb::ndarray<Scalar, nb::s
 }
 
 NB_MODULE(_bvh_bind_ext, m) {
-    m.doc() = "This is a \"hello world\" example with nanobind3";
+    m.doc() = "bindings for bvh and functions for ray intersection";
     nb::class_<Accel>(m, "Accel")
             .def(nb::init<const std::vector<Tri> &, const std::string &>());
     m.def("build_bvh", &build_bvh, "vertices"_a, "indices"_a, "quality"_a = "medium");
