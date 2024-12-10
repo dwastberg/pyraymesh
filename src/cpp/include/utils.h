@@ -64,7 +64,7 @@ static size_t intersect_accel(Ray &ray, const Accel &accel) {
     return prim_id;
 }
 
-static size_t count_intersects(Ray &ray, const Accel &accel) {
+static size_t interesection_counter(Ray &ray, const Accel &accel) {
     static constexpr size_t invalid_id = std::numeric_limits<size_t>::max();
     size_t prim_id = invalid_id;
     static constexpr size_t stack_size = 64;

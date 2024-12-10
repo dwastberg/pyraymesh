@@ -163,7 +163,7 @@ auto count_intersections(const Accel &bvh_accel, const nb::ndarray<Scalar, nb::s
     pool.detach_loop<size_t>(0, num_rays,
                              [&](size_t i) {
                                  auto ray = rays[i];
-                                 const auto hits = count_intersects(ray, bvh_accel);
+                                 const auto hits = interesection_counter(ray, bvh_accel);
                                  results[i] = hits;
                              }
                              );
