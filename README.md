@@ -71,9 +71,7 @@ value will be used for all rays. If they are lists, each value will be used for 
 
 If you set `tnear` to a value greater than 0, the intersection tests will ignore any intersections that are closer 
 than `tnear`. Similarly, if you set `tfar` to a value less than infinity, the intersection tests will ignore any 
-intersections that are farther than `tfar`.
-
-
+intersections that are farther than `tfar`. This library does not support negative values for `tnear` or `tfar`.
 
 ### Reflections
 
@@ -104,6 +102,19 @@ ray_direction = [[0, 0, -1], [0, 0, 1]]
 occluded = mesh.occlusion(ray_origin, ray_direction)
 print(occluded)
 ```
+
+### Count intersections
+
+If you want to know the total number of intersections for each ray along its path, without stopping at the first 
+intersection, you can use the `count_intersections` method:
+
+```python
+total_intersections = mesh.count_intersections(ray_origin, ray_direction)
+print(total_intersections)
+```
+This method returns an array of integers representing the total number of triangles that each ray intersects 
+between `tnear` and `tfar`.
+
 
 ### Parallelization
 
