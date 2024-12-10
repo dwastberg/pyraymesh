@@ -29,6 +29,7 @@ build-backend = "scikit_build_core.build"
 wheel.expand-macos-universal-tags = true
 build.verbose = true
 sdist.exclude = ["*.whl", "*.egg-info", "build", "dist"]
+cmake.build-type = "Release"
 
 [tool.uv]
 dev-dependencies = ["nanobind>=2.1.0", "pytest>=8.1.0", "trimesh>=4.4.1"]

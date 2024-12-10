@@ -48,7 +48,7 @@ def _prep_rays(ray_origin, ray_direction, tnear, tfar):
 
 class Mesh:
     def __init__(
-        self, vertices: Iterable[float], faces: Union[Iterable[int], None] = None
+        self, vertices: Iterable[float], faces: Union[Iterable[int], None] = None, threads: int = -1
     ):
         """
         Initializes the Mesh object with vertices and optional faces.
@@ -56,12 +56,18 @@ class Mesh:
         Parameters:
         vertices (array-like): An array of vertex coordinates.
         faces (array-like, optional): An array of face indices. Defaults to None. If None, the vertices are assumed to be a list of triangles.
+        threads (int, optional): The number of threads to use for intersection calculations. Defaults to -1, which uses all available threads.
         """
         self.vertices = vertices
         self.faces = faces
         self._normalize_mesh_data()
         self._bvh = None
         self.robust = True
+        if threads < 1:
+            self.threads = os.cpu_count()
+        else:
+            self.threads = threads
+
 
     def _normalize_mesh_data(self):
         self.vertices = np.array(self.vertices, dtype=np.float32)
@@ -98,6 +104,20 @@ class Mesh:
             raise ValueError("Mesh is empty")
         self._bvh = _bvh_bind_ext.build_bvh(self.vertices, self.faces, quality)
 
+    def _setup(self,ray_origin, ray_direction, tnear, tfar, threads = None):
+        if threads is not None:
+            if threads < 1:
+                self.threads = os.cpu_count()
+            else:
+                self.threads = threads
+        if not self.is_built:
+            print("BVH not built, building now with medium quality")
+            self.build("medium")
+            if not self.is_built:
+                raise ValueError("failed to build BVH")
+        ray_origin, ray_direction, tnear, tfar = _prep_rays(ray_origin, ray_direction, tnear, tfar)
+        return ray_origin, ray_direction, tnear, tfar
+
     def intersect(
         self,
         ray_origin: Union[Iterable[float],Iterable[Iterable[float]]],
@@ -105,7 +125,7 @@ class Mesh:
         tnear: Union[float,Iterable[float]] = 0,
         tfar: Union[float,Iterable[float]]  = np.finfo(np.float32).max,
         calculate_reflections: bool = False,
-        threads: int = 1,
+        threads: int = None,
     ) -> IntersectionResult:
         """
         Intersects the rays with the mesh.
@@ -122,23 +142,16 @@ class Mesh:
         Raises:
         ValueError: If the BVH is not built and cannot be built with the specified quality.
         """
-        if not self.is_built:
-            print("BVH not built, building now with medium quality")
-            self.build("medium")
-            if not self.is_built:
-                raise ValueError("failed to build BVH")
-        ray_origin, ray_direction, tnear, tfar = _prep_rays(ray_origin, ray_direction, tnear, tfar)
 
-        if threads < 1:
-            threads = os.cpu_count()
+        ray_origin, ray_direction, tnear, tfar = self._setup(ray_origin, ray_direction, tnear, tfar, threads)
 
         if calculate_reflections:
             coords, tri_ids, distances, reflections = _bvh_bind_ext.intersect_bvh(
-                self._bvh, ray_origin, ray_direction, tnear, tfar, calculate_reflections, self.robust, threads
+                self._bvh, ray_origin, ray_direction, tnear, tfar, calculate_reflections, self.robust, self.threads
             )
         else:
             coords, tri_ids, distances = _bvh_bind_ext.intersect_bvh(
-                self._bvh, ray_origin, ray_direction, tnear, tfar, calculate_reflections, self.robust, threads
+                self._bvh, ray_origin, ray_direction, tnear, tfar, calculate_reflections, self.robust, self.threads
             )
             reflections = np.empty((0, 3))
 
@@ -167,15 +180,31 @@ class Mesh:
         Raises:
         ValueError: If the BVH is not built and cannot be built with the specified quality.
         """
-        if not self.is_built:
-            print("BVH not built, building now with medium quality")
-            self.build("medium")
-        if threads < 1:
-            threads = os.cpu_count()
-        ray_origin, ray_direction, tnear,tfar = _prep_rays(ray_origin, ray_direction, tnear, tfar)
+
+        ray_origin, ray_direction, tnear,tfar = self._setup(ray_origin, ray_direction, tnear, tfar, threads)
         result = _bvh_bind_ext.occlude_bvh(
-            self._bvh, ray_origin, ray_direction, tnear, tfar, self.robust, threads
+            self._bvh, ray_origin, ray_direction, tnear, tfar, self.robust, self.threads
         )
 
-        return result
+        return result.astype(bool)
 
+
+    def count_intersections(self,
+                            ray_origin: Iterable[float],
+                            ray_direction: Iterable[float],
+                            tnear=0,
+                            tfar=np.finfo(np.float32).max,
+                            threads: int = 1,
+                            ) -> np.ndarray:
+        """
+        Counts the total number of intersections with the mesh along the rays.
+        :param ray_direction:
+        :param tnear:
+        :param tfar:
+        :param threads:
+        :return:
+        """
+
+        ray_origin, ray_direction, tnear,tfar = self._setup(ray_origin, ray_direction, tnear, tfar, threads)
+        result = _bvh_bind_ext.count_intersections(self._bvh, ray_origin, ray_direction, tnear, tfar, self.robust, self.threads)
+        return result

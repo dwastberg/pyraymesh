@@ -117,8 +117,6 @@ def test_occulsion():
     occ = m.occlusion(ray_origin, ray_direction)
     assert len(occ) == 1
     assert occ[0] == True
-
-
 def test_occulsion_miss():
     m = mesh_plane()
     m.build("medium")

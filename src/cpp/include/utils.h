@@ -64,6 +64,31 @@ static size_t intersect_accel(Ray &ray, const Accel &accel) {
     return prim_id;
 }
 
+static size_t count_intersects(Ray &ray, const Accel &accel) {
+    static constexpr size_t invalid_id = std::numeric_limits<size_t>::max();
+    size_t prim_id = invalid_id;
+    static constexpr size_t stack_size = 64;
+    bvh::v2::SmallStack<Bvh::Index, stack_size> stack;
+    size_t count = 0;
+
+    accel.bvh.intersect<false, true>(ray, accel.bvh.get_root().index, stack,
+                                    [&](size_t begin, size_t end) {
+                                        for (size_t i = begin; i < end; ++i) {
+                                            auto tfar_orig = ray.tmax;
+                                            if (accel.precomputed_tris[i].intersect(ray)) {
+                                                // Reset tmax so that we still intersect triangles further away
+                                                ray.tmax = tfar_orig;
+                                                count++;
+                                            }
+                                        }
+                                        // pretend we always miss so we keep traversing
+                                        return false;
+
+                                    }
+    );
+    return count;
+}
+
 std::vector<Ray> pack_rays(const nb::ndarray<Scalar, nb::shape<-1, 3>> &origins,
                            const nb::ndarray<Scalar, nb::shape<-1, 3>> &directions, const nb::ndarray<Scalar, nb::ndim<1>> &tnear,
                            const nb::ndarray<Scalar, nb::ndim<1>> &tfar) {
