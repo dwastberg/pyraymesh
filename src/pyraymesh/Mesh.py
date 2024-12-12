@@ -208,3 +208,25 @@ class Mesh:
         ray_origin, ray_direction, tnear,tfar = self._setup(ray_origin, ray_direction, tnear, tfar, threads)
         result = _bvh_bind_ext.count_intersections(self._bvh, ray_origin, ray_direction, tnear, tfar, self.robust, self.threads)
         return result
+
+    def traverse(self, origin, direction):
+        """
+        Traverses the BVH for the mesh along the origin and direction.
+        :param origin:
+        :param direction:
+
+        """
+        if not self.is_built:
+            print("BVH not built, building now with medium quality")
+            self.build("medium")
+            if not self.is_built:
+                raise ValueError("failed to build BVH")
+
+        origin = np.array(origin, dtype=np.float32)
+        direction = np.array(direction, dtype=np.float32)
+        if len(origin.shape) == 1:
+            origin = origin[np.newaxis, :]
+        if len(direction.shape) == 1:
+            direction = direction[np.newaxis, :]
+        traversal = _bvh_bind_ext.traverse(self._bvh, origin, direction)
+        return traversal

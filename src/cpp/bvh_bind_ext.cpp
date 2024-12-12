@@ -175,6 +175,28 @@ auto count_intersections(const Accel &bvh_accel, const nb::ndarray<Scalar, nb::s
 
 }
 
+auto traverse(const Accel &bvh_accel, const nb::ndarray<Scalar, nb::shape<1, 3> > &origins,
+                         const nb::ndarray<Scalar, nb::shape<1, 3> > &directions) {
+    Ray ray = Ray(Vec3(origins(0, 0), origins(0, 1), origins(0, 2)),
+                  Vec3(directions(0, 0), directions(0, 1), directions(0, 2)),
+                  0.0, std::numeric_limits<Scalar>::infinity());
+    std::vector<size_t> tri_ids;
+    static constexpr size_t stack_size = 64;
+    bvh::v2::SmallStack<Bvh::Index, stack_size> stack;
+    bvh_accel.bvh.intersect<false, true>(ray, bvh_accel.bvh.get_root().index, stack,
+                                    [&](size_t begin, size_t end) {
+                                        for (size_t i = begin; i < end; ++i) {
+                                            tri_ids.push_back(bvh_accel.permutation_map[i]);
+                                        }
+                                        return false;
+                                    });
+
+
+
+    return tri_ids;
+
+}
+
 NB_MODULE(_bvh_bind_ext, m) {
     m.doc() = "bindings for bvh and functions for ray intersection";
     nb::class_<Accel>(m, "Accel")
@@ -186,4 +208,5 @@ NB_MODULE(_bvh_bind_ext, m) {
           "robust"_a = true, "threads"_a = 1);
     m.def("count_intersections", &count_intersections, "bvh_accel"_a, "origins"_a, "directions"_a, "tnear"_a,
           "tfar"_a, "robust"_a = true, "threads"_a = 1);
+    m.def("traverse", &traverse, "bvh_accel"_a, "origins"_a, "directions"_a);
 }
