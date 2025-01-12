@@ -52,7 +52,7 @@ def test_perf_multithreaded_intersect():
     time_1t = time() - t_time
 
     t_time = time()
-    result_mt = m.intersect(ray_origin, ray_direction, threads=-1)
+    result_mt = m.intersect(ray_origin, ray_direction, threads=2)
     time_mt = time() - t_time
 
     time_ratio = time_1t / time_mt
@@ -68,7 +68,7 @@ def test_perf_multithreaded_occlusion():
     time_1t = time() - t_time
 
     t_time = time()
-    result_mt = m.occlusion(ray_origin, ray_direction, threads=-1)
+    result_mt = m.occlusion(ray_origin, ray_direction, threads=2)
     time_mt = time() - t_time
 
     time_ratio = time_1t / time_mt
