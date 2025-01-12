@@ -295,12 +295,14 @@ class Mesh:
         )
         return ~self.occlusion(ray_origin, ray_direction, tnear, tfar, threads)
 
-
-    def traverse(self, origin, direction):
+    def traverse(self, origin, direction) -> list[int]:
         """
         Traverses the BVH for the mesh along the origin and direction.
-        :param origin:
-        :param direction:
+        Args:
+            origin (array-like): The origin points of the rays.
+            direction (array-like): The direction vectors of the rays.
+        Returns:
+            list[int]: A list of triangle ids in the order of the traversal.
 
         """
         if not self.is_built:
