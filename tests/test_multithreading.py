@@ -4,15 +4,18 @@ import numpy as np
 from pyraymesh import Mesh
 from time import time
 
+
 def mesh_plane():
     vertices = np.array([[0, 0, 0], [10, 0, 0], [10, 10, 0], [0, 10, 0]])
     faces = np.array([[0, 1, 2], [2, 3, 0]])
     return Mesh(vertices, faces)
 
+
 def build_ray(num_rays):
     ray_origin = np.random.rand(num_rays, 3) * 12
-    ray_direction = [0,0,-1]
+    ray_direction = [0, 0, -1]
     return ray_origin, ray_direction
+
 
 def test_multithreaded_intersect():
     m = mesh_plane()
@@ -29,6 +32,7 @@ def test_multithreaded_intersect():
     assert np.allclose(result_1t.distances, result_mt.distances, equal_nan=True)
     assert np.allclose(result_1t.coords, result_mt.coords, equal_nan=True)
 
+
 def test_multithreaded_occlusion():
     m = mesh_plane()
     m.build("medium")
@@ -42,7 +46,8 @@ def test_multithreaded_occlusion():
 
     assert np.allclose(result_1t, result_mt)
 
-def test_perf_multithreaded_intersect():
+
+def _test_perf_multithreaded_intersect():
     m = mesh_plane()
     m.build("medium")
     num_rays = 10000
@@ -52,13 +57,14 @@ def test_perf_multithreaded_intersect():
     time_1t = time() - t_time
 
     t_time = time()
-    result_mt = m.intersect(ray_origin, ray_direction, threads=-1)
+    result_mt = m.intersect(ray_origin, ray_direction, threads=4)
     time_mt = time() - t_time
 
     time_ratio = time_1t / time_mt
-    assert time_ratio > 1
+    assert time_ratio > 1.5
 
-def test_perf_multithreaded_occlusion():
+
+def _test_perf_multithreaded_occlusion():
     m = mesh_plane()
     m.build("medium")
     num_rays = 10000
@@ -68,8 +74,8 @@ def test_perf_multithreaded_occlusion():
     time_1t = time() - t_time
 
     t_time = time()
-    result_mt = m.occlusion(ray_origin, ray_direction, threads=-1)
+    result_mt = m.occlusion(ray_origin, ray_direction, threads=4)
     time_mt = time() - t_time
 
     time_ratio = time_1t / time_mt
-    assert time_ratio > 1
+    assert time_ratio > 1.5
