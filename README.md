@@ -105,7 +105,7 @@ print(occluded)
 
 ### Count intersections
 
-If you want to know the total number of intersections for each ray along its path, without stopping at the first 
+If you want to know the total number of intersections for each ray along its path, without stopping at the first
 intersection, you can use the `count_intersections` method:
 
 ```python
@@ -114,6 +114,25 @@ print(total_intersections)
 ```
 This method returns an array of integers representing the total number of triangles that each ray intersects 
 between `tnear` and `tfar`.
+
+### Test line-of-sight
+
+If you want to know if two points are visible to each other, you can use the `line_of_sight` method:
+
+```python
+
+origin_point = [[0.1, 0.2, 1], [0.2, 0.1, 1]]
+target_point = [[0, 0, -1], [0, 0, 1]]
+## or 
+origin_point = [[0.1, 0.2, 1], [0.2, 0.1, 1]]
+target_point = [0, 0, -1]  # multiple origin points with same target
+## or 
+origin_point = [0.1, 0.2, 1]
+target_point = [[0, 0, -1], [0, 0, 1]]  # multiple target points with same origin
+
+visible = mesh.line_of_sight(origin_point, target_point)
+```
+ `visible` is a list of booleans representing whether the target point is visible from the origin point.
 
 
 ### Parallelization

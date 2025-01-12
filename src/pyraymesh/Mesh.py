@@ -7,7 +7,6 @@ import os
 import numbers
 
 
-
 def _prep_rays(ray_origin, ray_direction, tnear, tfar):
     ray_origin = np.array(ray_origin, dtype=np.float32)
     ray_direction = np.array(ray_direction, dtype=np.float32)
@@ -46,9 +45,38 @@ def _prep_rays(ray_origin, ray_direction, tnear, tfar):
     return ray_origin, ray_direction, tnear, tfar
 
 
+def build_los_rays(origin_point, target_point):
+    origin_point = np.array(origin_point, dtype=np.float32)
+    target_point = np.array(target_point, dtype=np.float32)
+    if len(origin_point.shape) == 1:
+        if len(origin_point) != 3:
+            raise ValueError("origin_point must have 3 elements")
+        origin_point = origin_point[np.newaxis, :]
+    if len(target_point.shape) == 1:
+        if len(target_point) != 3:
+            raise ValueError("target_point must have 3 elements")
+        target_point = target_point[np.newaxis, :]
+    if len(origin_point) == 1 and len(target_point) > 1:
+        origin_point = np.repeat(origin_point, len(target_point), axis=0)
+    if len(target_point) == 1 and len(origin_point) > 1:
+        target_point = np.repeat(target_point, len(origin_point), axis=0)
+    if not len(origin_point) == len(target_point):
+        raise ValueError(
+            "origin_point and target_point must have the same length or one of them must have length 1"
+        )
+    direction = target_point - origin_point
+    direction /= np.linalg.norm(direction, axis=-1)[:, np.newaxis]
+    tnear = np.zeros(len(origin_point), dtype=np.float32)
+    tfar = np.linalg.norm(target_point - origin_point, axis=-1) - 1e-6
+    return origin_point, direction, tnear, tfar
+
+
 class Mesh:
     def __init__(
-        self, vertices: Iterable[float], faces: Union[Iterable[int], None] = None, threads: int = -1
+        self,
+        vertices: Iterable[float],
+        faces: Union[Iterable[int], None] = None,
+        threads: int = -1,
     ):
         """
         Initializes the Mesh object with vertices and optional faces.
@@ -67,7 +95,6 @@ class Mesh:
             self.threads = os.cpu_count()
         else:
             self.threads = threads
-
 
     def _normalize_mesh_data(self):
         self.vertices = np.array(self.vertices, dtype=np.float32)
@@ -104,7 +131,7 @@ class Mesh:
             raise ValueError("Mesh is empty")
         self._bvh = _bvh_bind_ext.build_bvh(self.vertices, self.faces, quality)
 
-    def _setup(self,ray_origin, ray_direction, tnear, tfar, threads = None):
+    def _setup(self, ray_origin, ray_direction, tnear, tfar, threads=None):
         if threads is not None:
             if threads < 1:
                 self.threads = os.cpu_count()
@@ -115,15 +142,17 @@ class Mesh:
             self.build("medium")
             if not self.is_built:
                 raise ValueError("failed to build BVH")
-        ray_origin, ray_direction, tnear, tfar = _prep_rays(ray_origin, ray_direction, tnear, tfar)
+        ray_origin, ray_direction, tnear, tfar = _prep_rays(
+            ray_origin, ray_direction, tnear, tfar
+        )
         return ray_origin, ray_direction, tnear, tfar
 
     def intersect(
         self,
-        ray_origin: Union[Iterable[float],Iterable[Iterable[float]]],
-        ray_direction: Union[Iterable[float],Iterable[Iterable[float]]],
-        tnear: Union[float,Iterable[float]] = 0,
-        tfar: Union[float,Iterable[float]]  = np.finfo(np.float32).max,
+        ray_origin: Union[Iterable[float], Iterable[Iterable[float]]],
+        ray_direction: Union[Iterable[float], Iterable[Iterable[float]]],
+        tnear: Union[float, Iterable[float]] = 0,
+        tfar: Union[float, Iterable[float]] = np.finfo(np.float32).max,
         calculate_reflections: bool = False,
         threads: int = None,
     ) -> IntersectionResult:
@@ -143,19 +172,37 @@ class Mesh:
         ValueError: If the BVH is not built and cannot be built with the specified quality.
         """
 
-        ray_origin, ray_direction, tnear, tfar = self._setup(ray_origin, ray_direction, tnear, tfar, threads)
+        ray_origin, ray_direction, tnear, tfar = self._setup(
+            ray_origin, ray_direction, tnear, tfar, threads
+        )
 
         if calculate_reflections:
             coords, tri_ids, distances, reflections = _bvh_bind_ext.intersect_bvh(
-                self._bvh, ray_origin, ray_direction, tnear, tfar, calculate_reflections, self.robust, self.threads
+                self._bvh,
+                ray_origin,
+                ray_direction,
+                tnear,
+                tfar,
+                calculate_reflections,
+                self.robust,
+                self.threads,
             )
         else:
             coords, tri_ids, distances = _bvh_bind_ext.intersect_bvh(
-                self._bvh, ray_origin, ray_direction, tnear, tfar, calculate_reflections, self.robust, self.threads
+                self._bvh,
+                ray_origin,
+                ray_direction,
+                tnear,
+                tfar,
+                calculate_reflections,
+                self.robust,
+                self.threads,
             )
             reflections = np.empty((0, 3))
 
-        return IntersectionResult(coords=coords, tri_ids=tri_ids, distances=distances, reflections=reflections)
+        return IntersectionResult(
+            coords=coords, tri_ids=tri_ids, distances=distances, reflections=reflections
+        )
 
     def occlusion(
         self,
@@ -181,21 +228,23 @@ class Mesh:
         ValueError: If the BVH is not built and cannot be built with the specified quality.
         """
 
-        ray_origin, ray_direction, tnear,tfar = self._setup(ray_origin, ray_direction, tnear, tfar, threads)
+        ray_origin, ray_direction, tnear, tfar = self._setup(
+            ray_origin, ray_direction, tnear, tfar, threads
+        )
         result = _bvh_bind_ext.occlude_bvh(
             self._bvh, ray_origin, ray_direction, tnear, tfar, self.robust, self.threads
         )
 
         return result.astype(bool)
 
-
-    def count_intersections(self,
-                            ray_origin: Iterable[float],
-                            ray_direction: Iterable[float],
-                            tnear=0,
-                            tfar=np.finfo(np.float32).max,
-                            threads: int = 1,
-                            ) -> np.ndarray:
+    def count_intersections(
+        self,
+        ray_origin: Iterable[float],
+        ray_direction: Iterable[float],
+        tnear=0,
+        tfar=np.finfo(np.float32).max,
+        threads: int = 1,
+    ) -> np.ndarray:
         """
         Counts the total number of intersections with the mesh along the rays.
         :param ray_direction:
@@ -205,6 +254,30 @@ class Mesh:
         :return:
         """
 
-        ray_origin, ray_direction, tnear,tfar = self._setup(ray_origin, ray_direction, tnear, tfar, threads)
-        result = _bvh_bind_ext.count_intersections(self._bvh, ray_origin, ray_direction, tnear, tfar, self.robust, self.threads)
+        ray_origin, ray_direction, tnear, tfar = self._setup(
+            ray_origin, ray_direction, tnear, tfar, threads
+        )
+        result = _bvh_bind_ext.count_intersections(
+            self._bvh, ray_origin, ray_direction, tnear, tfar, self.robust, self.threads
+        )
         return result
+
+    def line_of_sight(
+        self,
+        origin_point: Union[Iterable[float], Iterable[Iterable[float]]],
+        target_point: Union[Iterable[float], Iterable[Iterable[float]]],
+        threads: int = 1,
+    ) -> np.ndarray:
+        """
+        Checks for line of sight between two points.
+        :param origin_point: point to check line of sight from
+        :param target_point: target point to check line of sight to
+        :return:
+        """
+        ray_origin, ray_direction, tnear, tfar = build_los_rays(
+            origin_point, target_point
+        )
+        ray_origin, ray_direction, tnear, tfar = self._setup(
+            ray_origin, ray_direction, tnear, tfar, threads
+        )
+        return ~self.occlusion(ray_origin, ray_direction, tnear, tfar, threads)
