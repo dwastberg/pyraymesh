@@ -134,6 +134,22 @@ visible = mesh.line_of_sight(origin_point, target_point)
 ```
  `visible` is a list of booleans representing whether the target point is visible from the origin point.
 
+### Traverse the BVH
+
+If you want to traverse the BVH and get all triangles that are along a ray in the BVH. This is useful if you want to
+do some custom processing on the triangles that are potentially intersected by a ray. 
+
+```python
+origin = [0, 0, 10]
+direction = [0, 0, -1]
+
+for t_id in mesh.traverse(origin, direction):
+    print(f"Triangle {mesh.vertices[mesh.faces[t_id]]} is potentially intersected by the ray.")
+```
+
+Note that the current implementation traverses the entire BVH, even if you break early from the loop. For huge
+meshes, this can be a performance bottleneck. Hopefully, this will be fixed in future versions.
+
 
 ### Parallelization
 

@@ -297,7 +297,9 @@ class Mesh:
 
     def traverse(self, origin, direction) -> list[int]:
         """
-        Traverses the BVH for the mesh along the origin and direction.
+        Traverses the BVH of the mesh along the origin and direction. Returns the triangle ids of the found triangles
+        in the order of traversal.
+
         Args:
             origin (array-like): The origin points of the rays.
             direction (array-like): The direction vectors of the rays.
