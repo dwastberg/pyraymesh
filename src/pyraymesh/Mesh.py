@@ -81,10 +81,10 @@ class Mesh:
         """
         Initializes the Mesh object with vertices and optional faces.
 
-        Parameters:
-        vertices (array-like): An array of vertex coordinates.
-        faces (array-like, optional): An array of face indices. Defaults to None. If None, the vertices are assumed to be a list of triangles.
-        threads (int, optional): The number of threads to use for intersection calculations. Defaults to -1, which uses all available threads.
+        Args:
+            vertices (array-like): An array of vertex coordinates.
+            faces (array-like, optional): An array of face indices. Defaults to None. If None, the vertices are assumed to be a list of triangles.
+            threads (int, optional): The number of threads to use for intersection calculations. Defaults to -1, which uses all available threads.
         """
         self.vertices = vertices
         self.faces = faces
@@ -117,12 +117,12 @@ class Mesh:
         """
         Builds the BVH (Bounding Volume Hierarchy) for the mesh with the specified quality.
 
-        Parameters:
-        quality (str): The quality level for building the BVH. Must be one of 'low', 'medium', or 'high'.
-                       Defaults to 'medium'.
+        Args:
+            quality (str): The quality level for building the BVH. Must be one of 'low', 'medium', or 'high'. Defaults to 'medium'.
 
         Raises:
-        ValueError: If the quality is not one of 'low', 'medium', or 'high'.
+            ValueError: If the quality is not one of 'low', 'medium', or 'high'.
+            ValueError: If the mesh is empty.
         """
         quality = quality.lower()
         if quality not in ["low", "medium", "high"]:
@@ -159,17 +159,19 @@ class Mesh:
         """
         Intersects the rays with the mesh.
 
-        Parameters:
-        ray_origin (array-like): The origin points of the rays.
-        ray_direction (array-like): The direction vectors of the rays.
-        tnear (float, optional): The minimum distance along the ray to consider for intersections. Defaults to 0.
-        tfar (float, optional): The maximum distance along the ray to consider for intersections. Defaults to np.inf.
+        Args:
+            ray_origin (array-like): The origin points of the rays.
+            ray_direction (array-like): The direction vectors of the rays.
+            tnear (float, optional): The minimum distance along the ray to consider for intersections. Defaults to 0.
+            tfar (float, optional): The maximum distance along the ray to consider for intersections. Defaults to np.inf.
+            calculate_reflections (bool, optional): Whether to calculate reflections. Defaults to False.
+            threads (int, optional): The number of threads to use. Defaults to None.
 
         Returns:
-        Hits: An object containing the intersection coordinates, triangle IDs, and distances.
+            IntersectionResult: An object containing the intersection coordinates, triangle IDs, distances, and reflections.
 
         Raises:
-        ValueError: If the BVH is not built and cannot be built with the specified quality.
+            ValueError: If the BVH is not built and cannot be built with the specified quality.
         """
 
         ray_origin, ray_direction, tnear, tfar = self._setup(
@@ -215,17 +217,18 @@ class Mesh:
         """
         Checks for occlusion along the rays with the BVH (Bounding Volume Hierarchy) of the mesh.
 
-        Parameters:
-        ray_origin (array-like): The origin points of the rays.
-        ray_direction (array-like): The direction vectors of the rays.
-        tnear (float, optional): The minimum distance along the ray to consider for occlusion. Defaults to 0.
-        tfar (float, optional): The maximum distance along the ray to consider for occlusion. Defaults to np.inf.
+        Args:
+            ray_origin (array-like): The origin points of the rays.
+            ray_direction (array-like): The direction vectors of the rays.
+            tnear (float, optional): The minimum distance along the ray to consider for occlusion. Defaults to 0.
+            tfar (float, optional): The maximum distance along the ray to consider for occlusion. Defaults to np.inf.
+            threads (int, optional): The number of threads to use. Defaults to 1.
 
         Returns:
-        bool: (list of bool) A list of boolean values indicating whether the ray is occluded.
+            np.ndarray: A list of boolean values indicating whether the ray is occluded.
 
         Raises:
-        ValueError: If the BVH is not built and cannot be built with the specified quality.
+            ValueError: If the BVH is not built and cannot be built with the specified quality.
         """
 
         ray_origin, ray_direction, tnear, tfar = self._setup(
@@ -247,11 +250,16 @@ class Mesh:
     ) -> np.ndarray:
         """
         Counts the total number of intersections with the mesh along the rays.
-        :param ray_direction:
-        :param tnear:
-        :param tfar:
-        :param threads:
-        :return:
+
+        Args:
+            ray_origin (array-like): The origin points of the rays.
+            ray_direction (array-like): The direction vectors of the rays.
+            tnear (float, optional): The minimum distance along the ray to consider for intersections. Defaults to 0.
+            tfar (float, optional): The maximum distance along the ray to consider for intersections. Defaults to np.inf.
+            threads (int, optional): The number of threads to use. Defaults to 1.
+
+        Returns:
+            np.ndarray: An array of intersection counts.
         """
 
         ray_origin, ray_direction, tnear, tfar = self._setup(
@@ -270,9 +278,14 @@ class Mesh:
     ) -> np.ndarray:
         """
         Checks for line of sight between two points.
-        :param origin_point: point to check line of sight from
-        :param target_point: target point to check line of sight to
-        :return:
+
+        Args:
+            origin_point (array-like): Point to check line of sight from.
+            target_point (array-like): Target point to check line of sight to.
+            threads (int, optional): The number of threads to use. Defaults to 1.
+
+        Returns:
+            np.ndarray: A boolean array indicating line of sight.
         """
         ray_origin, ray_direction, tnear, tfar = build_los_rays(
             origin_point, target_point
