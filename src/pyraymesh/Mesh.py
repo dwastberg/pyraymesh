@@ -295,6 +295,34 @@ class Mesh:
         )
         return ~self.occlusion(ray_origin, ray_direction, tnear, tfar, threads)
 
+    def visibility_matrix(
+        self, points: List[Iterable[float]], threads: int = 1
+    ) -> np.ndarray:
+        """
+        Computes the visibility matrix between a list of points.
+
+        Args:
+            points (list[array-like]): A list of points to compute the visibility matrix for.
+            threads (int, optional): The number of threads to use. Defaults to 1.
+
+        Returns:
+            np.ndarray: A boolean matrix indicating visibility between the points.
+        """
+        points = np.array(points, dtype=np.float32)
+        n = len(points)
+        vis_matrix = np.zeros((len(points), len(points)), dtype=bool)
+        np.fill_diagonal(vis_matrix, True)
+
+        # Fill upper triangle
+        for i in range(n - 1):
+            vis_matrix[i, i + 1 :] = self.line_of_sight(
+                points[i], points[i + 1 :], threads
+            )
+        # Mirror the upper triangle to the lower triangle
+        vis_matrix = np.maximum(vis_matrix, vis_matrix.T)
+
+        return vis_matrix
+
     def traverse(self, origin, direction) -> list[int]:
         """
         Traverses the BVH of the mesh along the origin and direction. Returns the triangle ids of the found triangles
