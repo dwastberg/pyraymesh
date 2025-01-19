@@ -134,6 +134,18 @@ visible = mesh.line_of_sight(origin_point, target_point)
 ```
  `visible` is a list of booleans representing whether the target point is visible from the origin point.
 
+### Visibility Matrix
+
+If you want to know the visibility matrix between all pairs of a list of points, you can use the `visibility_matrix` method:
+For N points it returns an NxN matrix where the element at (i, j) is True if the j-th point is visible from the i-th point.
+
+```python
+points = [[0.1, 0.2, 1], [0.2, 0.1, 1], [0.3, 0.4, 1]]
+vis_matrix = mesh.visibility_matrix(points)
+# vis_matrix is a 3x3 array of booleans
+```
+
+
 ### Traverse the BVH
 
 If you want to traverse the BVH and get all triangles that are along a ray in the BVH, you can use the `traverse` method. This is useful if you want to
