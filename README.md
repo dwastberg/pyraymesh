@@ -148,19 +148,25 @@ vis_matrix = mesh.visibility_matrix(points)
 
 ### Traverse the BVH
 
-If you want to traverse the BVH and get all triangles that are along a ray in the BVH, you can use the `traverse` method. This is useful if you want to
-do some custom processing on the triangles that are potentially intersected by a ray. 
+If you want to traverse the BVH and get all triangles that are along a ray in the BVH, you can use the `traverse` or 
+`traverse_all` method. These are useful if you want to do some custom processing on the triangles that are potentially 
+intersected by a ray. The `traverse_all` method returns a list of triangle IDs of all triangles potentially intersected 
+by the ray. The `traverse` method returns a generator that you can use to traverse the BVH. If you know you will need
+all, or most, of the triangles, it is recommended to use `traverse_all` as it is faster. If you are likely to break early
+from the loop, you can use `traverse` fpr better performance and use less memory.
 
 ```python
 origin = [0, 0, 10]
 direction = [0, 0, -1]
 
 for t_id in mesh.traverse(origin, direction):
+    print(f"Triangle {mesh.vertices[mesh.faces[t_id]]} is the first triangle in the BVH traversed by the ray.")
+    break
+
+all_triangles = mesh.traverse_all(origin, direction)   
+for t_id in all_triangles:
     print(f"Triangle {mesh.vertices[mesh.faces[t_id]]} is potentially intersected by the ray.")
 ```
-
-Note that the current implementation traverses the entire BVH when the method is called, even if you break early from the loop. For huge
-meshes, this can be a performance bottleneck. Hopefully, this will be fixed in future versions.
 
 
 ### Parallelization

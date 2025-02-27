@@ -323,14 +323,38 @@ class Mesh:
 
         return vis_matrix
 
-    def traverse(self, origin, direction) -> list[int]:
-        """
-        Traverses the BVH of the mesh along the origin and direction. Returns the triangle ids of the found triangles
-        in the order of traversal.
+    def traverse(self, origin, direction):
+        """Traverse the BVH tree for the given ray and yield the triangles one by one.
 
         Args:
-            origin (array-like): The origin points of the rays.
-            direction (array-like): The direction vectors of the rays.
+            origin (array-like): The origin points of the ray.
+            direction (array-like): The direction vectors of the ray.
+        """
+        if not self.is_built:
+            print("BVH not built, building now with medium quality")
+            self.build("medium")
+            if not self.is_built:
+                raise ValueError("failed to build BVH")
+        origin = np.array(origin, dtype=np.float32)
+        direction = np.array(direction, dtype=np.float32)
+        if len(origin.shape) == 1:
+            origin = origin[np.newaxis, :]
+        if len(direction.shape) == 1:
+            direction = direction[np.newaxis, :]
+        traverser = _bvh_bind_ext.create_traverser(self._bvh, origin, direction)
+        while not traverser.finished:
+            triangle_id = traverser.next()
+            if triangle_id == -1:  # No more triangles
+                break
+            yield triangle_id
+
+    def traverse_all(self, origin, direction) -> list[int]:
+        """
+        Get all the triangles traversed by the ray in order of traversal.
+
+        Args:
+            origin (array-like): The origin points of the ray.
+            direction (array-like): The direction vectors of the ray.
         Returns:
             list[int]: A list of triangle ids in the order of the traversal.
 
@@ -347,5 +371,5 @@ class Mesh:
             origin = origin[np.newaxis, :]
         if len(direction.shape) == 1:
             direction = direction[np.newaxis, :]
-        traversal = _bvh_bind_ext.traverse(self._bvh, origin, direction)
+        traversal = _bvh_bind_ext.traverse_all(self._bvh, origin, direction)
         return traversal

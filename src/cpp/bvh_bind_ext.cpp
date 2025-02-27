@@ -1,6 +1,7 @@
 #include "types.h"
 #include "utils.h"
 #include "Accel.h"
+#include "Traverser.h"
 
 #include <nanobind/nanobind.h>
 #include <nanobind/ndarray.h>
@@ -175,7 +176,7 @@ auto count_intersections(const Accel &bvh_accel, const nb::ndarray<Scalar, nb::s
 
 }
 
-auto traverse(const Accel &bvh_accel, const nb::ndarray<Scalar, nb::shape<1, 3> > &origins,
+auto traverse_all(const Accel &bvh_accel, const nb::ndarray<Scalar, nb::shape<1, 3> > &origins,
                          const nb::ndarray<Scalar, nb::shape<1, 3> > &directions) {
     Ray ray = Ray(Vec3(origins(0, 0), origins(0, 1), origins(0, 2)),
                   Vec3(directions(0, 0), directions(0, 1), directions(0, 2)),
@@ -197,6 +198,18 @@ auto traverse(const Accel &bvh_accel, const nb::ndarray<Scalar, nb::shape<1, 3> 
 
 }
 
+// Create a traverser object and return it as a pointer
+auto create_traverser(const Accel &bvh_accel, const nb::ndarray<Scalar, nb::shape<1, 3>> &origins,
+                             const nb::ndarray<Scalar, nb::shape<1, 3>> &directions) {
+    const Ray ray = Ray(Vec3(origins(0, 0), origins(0, 1), origins(0, 2)),
+                  Vec3(directions(0, 0), directions(0, 1), directions(0, 2)),
+                  0.0, std::numeric_limits<Scalar>::infinity());
+
+    return std::make_unique<BvhTraverser>(bvh_accel, ray);
+}
+
+
+
 NB_MODULE(_bvh_bind_ext, m) {
     m.doc() = "bindings for bvh and functions for ray intersection";
     nb::class_<Accel>(m, "Accel")
@@ -208,5 +221,13 @@ NB_MODULE(_bvh_bind_ext, m) {
           "robust"_a = true, "threads"_a = 1);
     m.def("count_intersections", &count_intersections, "bvh_accel"_a, "origins"_a, "directions"_a, "tnear"_a,
           "tfar"_a, "robust"_a = true, "threads"_a = 1);
-    m.def("traverse", &traverse, "bvh_accel"_a, "origins"_a, "directions"_a);
+    m.def("traverse_all", &traverse_all, "bvh_accel"_a, "origins"_a, "directions"_a);
+
+    nb::class_<BvhTraverser>(m, "BvhTraverser")
+        .def(nb::init<const Accel &, const Ray &>())
+        .def_rw("finished", &BvhTraverser::finished)
+        .def("next", &BvhTraverser::next);
+
+    m.def("create_traverser", &create_traverser, "bvh_accel"_a, "origins"_a, "directions"_a);
+
 }
