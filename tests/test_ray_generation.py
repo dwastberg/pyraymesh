@@ -5,6 +5,7 @@ from pyraymesh.ray_functions import (
     cone_direction_vectors,
     sphere_direction_vectors,
     hammersley_sphere_direction_vectors,
+    random_sphere_direction_vectors,
 )
 
 
@@ -42,6 +43,23 @@ def test_sphere_direction_vectors():
 def test_hamersly_sphere_direction_vectors():
     num_rays = 1000
     sphere_directions = hammersley_sphere_direction_vectors(num_rays)
+    assert len(sphere_directions) == num_rays
+    vector_lengths = np.linalg.norm(sphere_directions, axis=1)
+    assert np.allclose(vector_lengths, 1)
+
+    assert sphere_directions[:, 0].max() > 0.995
+    assert sphere_directions[:, 0].min() < -0.995
+
+    assert sphere_directions[:, 1].max() > 0.995
+    assert sphere_directions[:, 1].min() < -0.995
+
+    assert sphere_directions[:, 2].max() > 0.995
+    assert sphere_directions[:, 2].min() < -0.995
+
+
+def test_random_sphere_direction_vector():
+    num_rays = 1000
+    sphere_directions = random_sphere_direction_vectors(num_rays)
     assert len(sphere_directions) == num_rays
     vector_lengths = np.linalg.norm(sphere_directions, axis=1)
     assert np.allclose(vector_lengths, 1)

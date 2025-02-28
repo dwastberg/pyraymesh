@@ -62,6 +62,29 @@ def hammersley_sphere_direction_vectors(n: int) -> np.ndarray:
     return points
 
 
+def random_sphere_direction_vectors(n: int) -> np.ndarray:
+    """
+    Generate `n` random direction vectors uniformly on a sphere using
+    Args:
+        n (int): The number of points to generate.
+
+    Returns:
+        np.ndarray: An array of shape (n, 3) containing (x, y, z) coordinates of the points on the sphere.
+    """
+    uv = np.random.rand(n, 2)
+    u = np.acos(2 * uv[:, 0] - 1) - np.pi / 2
+    v = 2 * np.pi * uv[:, 1]
+
+    cosu = np.cos(u)
+    sinu = np.sin(u)
+    cosv = np.cos(v)
+    sinv = np.sin(v)
+    points = np.column_stack([cosu * cosv, cosu * sinv, sinu])
+
+    # points /= np.linalg.norm(points, axis=1)[:, np.newaxis]
+    return points
+
+
 def cone_direction_vectors(
     direction: Iterable[float], angle_degrees: float, n: int
 ) -> np.ndarray:
