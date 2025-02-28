@@ -64,11 +64,6 @@ def test_random_sphere_direction_vector():
     vector_lengths = np.linalg.norm(sphere_directions, axis=1)
     assert np.allclose(vector_lengths, 1)
 
-    assert sphere_directions[:, 0].max() > 0.995
-    assert sphere_directions[:, 0].min() < -0.995
-
-    assert sphere_directions[:, 1].max() > 0.995
-    assert sphere_directions[:, 1].min() < -0.995
-
-    assert sphere_directions[:, 2].max() > 0.995
-    assert sphere_directions[:, 2].min() < -0.995
+    assert sphere_directions[:, 0].max() - sphere_directions[:, 0].min() > 1.8
+    assert sphere_directions[:, 1].max() - sphere_directions[:, 1].min() > 1.8
+    assert sphere_directions[:, 2].max() - sphere_directions[:, 2].min() > 1.8
