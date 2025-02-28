@@ -27,13 +27,13 @@ public:
             auto top = stack_.pop();
 
             if (top.is_leaf()) {
-                // Process leaf node
+                // Process leaf node, garb all triangles in the leaf
                 for (size_t i = top.first_id(); i < top.first_id() + top.prim_count(); ++i) {
                     size_t tri_id = accel_.permutation_map[i];
                     current_leaf_tris_.push_back(tri_id);
                 }
 
-                // If we have triangles from this leaf, return the first one
+                // If we have triangles from this leaf, return the next one
                 if (!current_leaf_tris_.empty()) {
                     int64_t result = current_leaf_tris_.back();
                     current_leaf_tris_.pop_back();
@@ -70,12 +70,6 @@ public:
                 }
             }
 
-            // If we have triangles from previous leaves, return the next one
-            if (!current_leaf_tris_.empty()) {
-                const int64_t result = current_leaf_tris_.back();
-                current_leaf_tris_.pop_back();
-                return result;
-            }
         }
 
         // return the last triangles
