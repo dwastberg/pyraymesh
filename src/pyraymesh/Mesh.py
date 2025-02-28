@@ -147,6 +147,37 @@ class Mesh:
         )
         return ray_origin, ray_direction, tnear, tfar
 
+    def merge(self, other: "Mesh", rebuild_bvh=True) -> "Mesh":
+        """
+        Merges the current mesh with another mesh.
+
+        Args:
+            other (Mesh): The other mesh to merge with.
+            rebuild_bvh (bool, optional): Whether to rebuild the BVH after merging. Defaults to True.
+
+        Returns:
+            Mesh: The merged mesh.
+        """
+        if len(other.vertices) == 0 or len(other.faces) == 0:
+            # Nothing to merge
+            return self
+        if len(self.vertices) == 0 or len(self.faces) == 0:
+            # Nothing to merge into
+            self.vertices = other.vertices
+            self.faces = other.faces
+            if rebuild_bvh:
+                self.build("medium")
+            return self
+
+        current_vert_count = len(self.vertices)
+        self.vertices = np.vstack((self.vertices, other.vertices))
+        shifted_faces = other.faces + current_vert_count
+        self.faces = np.vstack((self.faces, shifted_faces))
+        self._bvh = None
+        if rebuild_bvh:
+            self.build("medium")
+        return self
+
     def intersect(
         self,
         ray_origin: Union[Iterable[float], Iterable[Iterable[float]]],
