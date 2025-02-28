@@ -115,6 +115,23 @@ print(total_intersections)
 This method returns an array of integers representing the total number of triangles that each ray intersects 
 between `tnear` and `tfar`.
 
+### Parallelization
+
+The `intersect` and `occlusion` methods can be parallelized by passing `threads` parameter when calling the methods:
+
+```python
+result = mesh.intersect(ray_origin, ray_direction, tnear=0, tfar=1000, threads=4)
+```
+
+The `threads` parameter specifies the number of threads to use for the intersection tests. If set to `-1`,
+the number of threads will be equal to the number of cores on the machine. In general you shouldn't set the number of
+threads to be greater than the number of cores on the machine.
+
+For a small number of rays, the overhead of parallelization might make the parallel version slower than the serial
+version, so it is recommended to test the performance of both versions for your specific use case.
+
+
+
 ### Ray Direction Utilities
 
 The library includes several utility methods for generating ray directions distributed on a sphere. The 
@@ -195,23 +212,6 @@ all_triangles = mesh.traverse_all(origin, direction)
 for t_id in all_triangles:
     print(f"Triangle {mesh.vertices[mesh.faces[t_id]]} is potentially intersected by the ray.")
 ```
-
-
-### Parallelization
-
-The `intersect` and `occlusion` methods can be parallelized by passing `threads` parameter when calling the methods:
-
-```python
-result = mesh.intersect(ray_origin, ray_direction, tnear=0, tfar=1000, threads=4)
-```
-
-The `threads` parameter specifies the number of threads to use for the intersection tests. If set to `-1`, 
-the number of threads will be equal to the number of cores on the machine. In general you shouldn't set the number of 
-threads to be greater than the number of cores on the machine.
-
-For a small number of rays, the overhead of parallelization might make the parallel version slower than the serial
-version, so it is recommended to test the performance of both versions for your specific use case.
-
 
 ## Testing
 
