@@ -115,6 +115,34 @@ print(total_intersections)
 This method returns an array of integers representing the total number of triangles that each ray intersects 
 between `tnear` and `tfar`.
 
+### Ray Direction Utilities
+
+The library includes several utility methods for generating ray directions distributed on a sphere. The 
+`sphere_direction_vectors` function generates points evenly distributed on a sphere using 
+a Fibonacci spiral pattern, providing excellent uniformity even with small sample counts. For an 
+alternative distribution, `hammersley_sphere_direction_vectors` implements the low-discrepancy Hammersley 
+sequence. When you need to sample within a specific angle, the `cone_direction_vectors` function creates 
+rays distributed within a cone of a specified angle around a central direction. 
+For completely random sampling, `random_sphere_direction_vectors` provides uniformly distributed random directions. 
+
+```python
+from pyraymesh.ray_functions import (
+    sphere_direction_vectors,
+    hammersley_sphere_direction_vectors,
+    cone_direction_vectors,
+    random_sphere_direction_vectors,
+)
+
+# Generate 1000 rays distributed on a sphere (using Fibonacci spiral pattern)   
+sphere_rays = sphere_direction_vectors(1000) 
+# Generate 1000 rays distributed on a sphere (using Hammersley sequence)
+hammersley_rays = hammersley_sphere_direction_vectors(1000)
+# Generate 1000 rays distributed within a cone of 30 degrees around the z-axis
+cone_rays = cone_direction_vectors(1000, [0, 0, 1], 30)
+# Generate 1000 uniformly distributed random rays
+random_rays = random_sphere_direction_vectors(1000)
+```
+
 ### Test line-of-sight
 
 If you want to know if two points are visible to each other, you can use the `line_of_sight` method:
