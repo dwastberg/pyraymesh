@@ -48,7 +48,7 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheel
+          name: wheel-${{ strategy.job-index }}
           path: wheelhouse/*.whl
 
   publish_wheels:
@@ -65,7 +65,7 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: wheel
+          name: wheel-${{ strategy.job-index }}
           path: dist
 
       - name: Publish wheels
