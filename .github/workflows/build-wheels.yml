@@ -22,6 +22,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
+          name: dist-${{ strategy.job-index }}
           path: dist/*.tar.gz
   build_wheels:
     name: Build  Wheels on ${{ matrix.os }}
@@ -47,6 +48,7 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
+          name: wheel-${{ strategy.job-index }}
           path: wheelhouse/*.whl
 
   publish_wheels:
