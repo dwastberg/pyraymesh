@@ -1,4 +1,8 @@
 # pyraymesh
+[![PyPI version](https://badge.fury.io/py/pyraymesh.svg)](https://badge.fury.io/py/pyraymesh)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+Fast ray-mesh intersection testing in Python with BVH acceleration
 
 ## Description
 
@@ -6,8 +10,7 @@
 tests on 3D meshes using a Bounding Volume Hierarchy (BVH). The library uses
 the C++ library [bvh](https://github.com/madmann91/bvh) for building the BVH and performing the intersection tests.
 
-While this library is reasonably fast for simpler meshes (benchmarks coming soon), it is not as fast as Embree, espcially for larger and more complex meshes. However, it does not
-have any dependencies on external libraries, and is thus easier to install and use.
+While this library is reasonably fast for simpler meshes (benchmarks coming soon), it is not as fast as Embree, espcially for larger and more complex meshes. However, `pyraymesh` aims for simpler installation and usage by avoiding heavy external dependencies.
 
 ## Installation
 
@@ -23,7 +26,7 @@ or cloning the repo and using pip:
 pip install .
 ```
 
-Note that the package requires a C++ compiler to build the C++ extension.
+Note that the package requires a C++ compiler to build the C++ extension when building from source.
 
 ## Usage
 
@@ -84,7 +87,7 @@ ray_direction = [[0, 0, -1], [0, 0, 1]]
 result = mesh.intersect(ray_origin, ray_direction, tnear=0, tfar=1000, calculate_reflections=True)
 print(result.reflections)
 ```
-results.reflections is a list  of noramlized vectors representing the directions of the 
+`results.reflections` is a list  of noramlized vectors representing the directions of the 
 reflection of the rays. Only do this if you need the reflections, as it will slow down the
 intersection tests.
 
@@ -124,7 +127,7 @@ result = mesh.intersect(ray_origin, ray_direction, tnear=0, tfar=1000, threads=4
 ```
 
 The `threads` parameter specifies the number of threads to use for the intersection tests. If set to `-1`,
-the number of threads will be equal to the number of cores on the machine. In general you shouldn't set the number of
+the number of threads will be equal to the number of cores on the machine (as reported by `os.cpu_count()`). In general you shouldn't set the number of
 threads to be greater than the number of cores on the machine.
 
 For a small number of rays, the overhead of parallelization might make the parallel version slower than the serial
@@ -194,11 +197,11 @@ vis_matrix = mesh.visibility_matrix(points)
 ### Traverse the BVH
 
 If you want to traverse the BVH and get all triangles that are along a ray in the BVH, you can use the `traverse` or 
-`traverse_all` method. These are useful if you want to do some custom processing on the triangles that are potentially 
+`traverse_all` method. These are primarily useful if you want to implement custom intersection logic or do some custom processing on the triangles that are potentially 
 intersected by a ray. The `traverse_all` method returns a list of triangle IDs of all triangles potentially intersected 
 by the ray. The `traverse` method returns a generator that you can use to traverse the BVH. If you know you will need
 all, or most, of the triangles, it is recommended to use `traverse_all` as it is faster. If you are likely to break early
-from the loop, you can use `traverse` fpr better performance and use less memory.
+from the loop, you can use `traverse` for better performance and use less memory.
 
 ```python
 origin = [0, 0, 10]
